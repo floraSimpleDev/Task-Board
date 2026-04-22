@@ -35,6 +35,13 @@ export default defineConfig([
   },
 
   {
+    files: ['src/routes/**/*.ts', 'src/plugins/**/*.ts'],
+    rules: {
+      '@typescript-eslint/require-await': 'off',
+    },
+  },
+
+  {
     plugins: { import: importPlugin },
     settings: {
       'import/resolver': {

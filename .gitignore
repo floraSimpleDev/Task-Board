@@ -11,6 +11,9 @@ pnpm-debug.log*
 frontend/dist/
 backend/dist/
 
+# Claude config
+.claude
+
 # Environment files
 .env
 .env.local
