@@ -1,0 +1,19 @@
+{
+  "name": "task-board",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev -w frontend",
+    "build:frontend": "npm run build -w frontend",
+    "lint:frontend": "npm run lint -w frontend",
+    "typecheck:frontend": "npm run typecheck -w frontend",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}
