@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "commonjs",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc -b && tsc-alias",

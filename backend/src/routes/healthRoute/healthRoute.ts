@@ -1,12 +1,11 @@
-import type { FastifyPluginCallback } from 'fastify'
+import type { FastifyPluginAsync } from 'fastify'
 
 import healthSchema from '@/types/healthSchema'
 
-const healthRoute: FastifyPluginCallback = (fastify, _opts, done) => {
-  fastify.get('/health', { schema: { response: { 200: healthSchema } } }, () => ({
+const healthRoute: FastifyPluginAsync = async (fastify) => {
+  fastify.get('/health', { schema: { response: { 200: healthSchema } } }, async () => ({
     status: 'ok',
   }))
-  done()
 }
 
 export default healthRoute
