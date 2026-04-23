@@ -1,16 +1,10 @@
+import validateEnv from '@/lib/validateEnv'
+
 import buildApp from './app'
 
 const start = async (): Promise<void> => {
-  const port = Number(process.env.PORT)
-  const host = process.env.HOST
-
-  if (!port) {
-    throw new Error('Missing environment variable port')
-  }
-
-  if (!host) {
-    throw new Error('Missing environment variable host')
-  }
+  const port = Number(validateEnv('PORT'))
+  const host = validateEnv('HOST')
 
   const app = await buildApp()
 
