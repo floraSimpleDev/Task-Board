@@ -6,7 +6,7 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default defineConfig([
-  globalIgnores(['dist', 'node_modules', 'lint-staged.config.mjs']),
+  globalIgnores(['dist', 'node_modules', 'lint-staged.config.mjs', 'drizzle.config.ts', 'drizzle']),
 
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
