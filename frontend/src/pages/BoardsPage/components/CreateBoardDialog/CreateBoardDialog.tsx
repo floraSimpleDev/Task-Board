@@ -15,23 +15,23 @@ import { Input } from '@/components/ui/input'
 import useCreateBoard from '@/hooks/useCreateBoard'
 
 const CreateBoardDialog: FC = () => {
-  const createBoard = useCreateBoard()
+  const { trigger, isMutating, error } = useCreateBoard()
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
-  const [submitting, setSubmitting] = useState(false)
 
-  const handleSubmit = async (): Promise<void> => {
+  const handleSubmit = (): void => {
     if (title.length === 0) {
       return
     }
-    setSubmitting(true)
-    try {
-      await createBoard({ title })
-      setTitle('')
-      setOpen(false)
-    } finally {
-      setSubmitting(false)
-    }
+    void trigger(
+      { title },
+      {
+        onSuccess: () => {
+          setTitle('')
+          setOpen(false)
+        },
+      }
+    )
   }
 
   return (
@@ -43,14 +43,14 @@ const CreateBoardDialog: FC = () => {
         <form
           onSubmit={(event) => {
             event.preventDefault()
-            void handleSubmit()
+            handleSubmit()
           }}
         >
           <DialogHeader>
             <DialogTitle>New board</DialogTitle>
             <DialogDescription>Give your board a title to get started.</DialogDescription>
           </DialogHeader>
-          <div className="my-4">
+          <div className="my-4 space-y-2">
             <Input
               autoFocus
               placeholder="e.g. Personal goals"
@@ -58,17 +58,18 @@ const CreateBoardDialog: FC = () => {
               onChange={(event) => {
                 setTitle(event.target.value)
               }}
-              disabled={submitting}
+              disabled={isMutating}
             />
+            {error && <p className="text-destructive text-sm">Failed to create: {error.message}</p>}
           </div>
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={submitting}>
+              <Button type="button" variant="outline" disabled={isMutating}>
                 Cancel
               </Button>
             </DialogClose>
-            <Button type="submit" disabled={submitting || title.length === 0}>
-              {submitting ? 'Creating...' : 'Create'}
+            <Button type="submit" disabled={isMutating || title.length === 0}>
+              {isMutating ? 'Creating...' : 'Create'}
             </Button>
           </DialogFooter>
         </form>
