@@ -1,4 +1,4 @@
-import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core'
+import { DndContext, DragOverlay } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable'
 import type { FC } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
@@ -11,6 +11,7 @@ import ColumnCard from './components/ColumnCard'
 import CreateColumnForm from './components/CreateColumnForm'
 import SortableColumn from './components/SortableColumn'
 import useBoardDnd from './hooks/useBoardDnd'
+import boardCollisionDetection from './utils/boardCollisionDetection'
 
 const BoardDetailPage: FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -54,7 +55,7 @@ const BoardDetailPage: FC = () => {
         {board && (
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCorners}
+            collisionDetection={boardCollisionDetection}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onDragCancel={handleDragCancel}

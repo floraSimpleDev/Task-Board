@@ -36,7 +36,11 @@ const getMyBoardWithColumns = async (
     },
   })
 
-  return board ?? null
+  if (!board) {
+    return null
+  }
+
+  return board
 }
 
 export default getMyBoardWithColumns
