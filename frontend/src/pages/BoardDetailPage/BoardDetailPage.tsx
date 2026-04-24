@@ -1,18 +1,41 @@
+import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core'
+import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable'
 import type { FC } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 
 import useBoard from '@/hooks/useBoard'
+import useMoveTask from '@/hooks/useMoveTask'
+import useReorderColumns from '@/hooks/useReorderColumns'
 
 import ColumnCard from './components/ColumnCard'
 import CreateColumnForm from './components/CreateColumnForm'
+import SortableColumn from './components/SortableColumn'
+import useBoardDnd from './hooks/useBoardDnd'
 
 const BoardDetailPage: FC = () => {
   const { id } = useParams<{ id: string }>()
   const { data: board, error, isLoading } = useBoard(id)
+  const reorderColumns = useReorderColumns({ boardId: id ?? '' })
+  const moveTask = useMoveTask({ boardId: id ?? '' })
+
+  const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useBoardDnd({
+    board,
+    onReorderColumns: (columnIds) => {
+      void reorderColumns(columnIds)
+    },
+    onMoveTask: (move) => {
+      void moveTask(move)
+    },
+  })
 
   if (!id) {
     return <Navigate to="/boards" replace />
   }
+
+  const draggedColumn =
+    activeDrag?.type === 'column'
+      ? board?.columns.find((column) => column.id === activeDrag.columnId)
+      : undefined
 
   return (
     <div>
@@ -29,12 +52,34 @@ const BoardDetailPage: FC = () => {
         {error && <p className="text-destructive">Failed to load board: {error.message}</p>}
 
         {board && (
-          <>
-            {board.columns.map((column) => (
-              <ColumnCard key={column.id} boardId={board.id} column={column} />
-            ))}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+          >
+            <SortableContext
+              items={board.columns.map((column) => column.id)}
+              strategy={horizontalListSortingStrategy}
+            >
+              {board.columns.map((column) => (
+                <SortableColumn key={column.id} columnId={column.id}>
+                  {(dragHandleProps) => (
+                    <ColumnCard
+                      boardId={board.id}
+                      column={column}
+                      dragHandleProps={dragHandleProps}
+                    />
+                  )}
+                </SortableColumn>
+              ))}
+            </SortableContext>
             <CreateColumnForm boardId={board.id} />
-          </>
+            <DragOverlay>
+              {draggedColumn && <ColumnCard boardId={board.id} column={draggedColumn} />}
+            </DragOverlay>
+          </DndContext>
         )}
       </main>
     </div>

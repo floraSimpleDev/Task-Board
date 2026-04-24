@@ -3,18 +3,22 @@ import type { FastifyPluginAsync } from 'fastify'
 
 import createBoard from '@/repositories/createBoard'
 import deleteBoard from '@/repositories/deleteBoard'
+import getMyBoard from '@/repositories/getMyBoard'
 import getMyBoardWithColumns from '@/repositories/getMyBoardWithColumns'
 import listMyBoards from '@/repositories/listMyBoards'
+import reorderColumns from '@/repositories/reorderColumns'
 import updateBoard from '@/repositories/updateBoard'
 import boardIdParamsSchema from '@/types/boardIdParamsSchema'
 import boardListSchema from '@/types/boardListSchema'
 import boardSchema from '@/types/boardSchema'
 import boardWithColumnsSchema from '@/types/boardWithColumnsSchema'
 import createBoardSchema from '@/types/createBoardSchema'
+import reorderColumnsSchema from '@/types/reorderColumnsSchema'
 import updateBoardSchema from '@/types/updateBoardSchema'
 
 type BoardIdParams = Static<typeof boardIdParamsSchema>
 type CreateBoardBody = Static<typeof createBoardSchema>
+type ReorderColumnsBody = Static<typeof reorderColumnsSchema>
 type UpdateBoardBody = Static<typeof updateBoardSchema>
 
 const boardsRoute: FastifyPluginAsync = async (fastify) => {
@@ -59,6 +63,33 @@ const boardsRoute: FastifyPluginAsync = async (fastify) => {
         title: request.body.title,
       })
       void reply.code(201).send(board)
+    }
+  )
+
+  fastify.patch<{ Params: BoardIdParams; Body: ReorderColumnsBody }>(
+    '/boards/:id/columns/reorder',
+    {
+      preHandler: fastify.authenticate,
+      schema: {
+        params: boardIdParamsSchema,
+        body: reorderColumnsSchema,
+      },
+    },
+    async (request, reply) => {
+      const board = await getMyBoard(fastify.database, request.params.id, request.dbUser.id)
+      if (!board) {
+        void reply.code(404).send({ error: 'Not Found', message: 'Board not found' })
+        return
+      }
+
+      const reordered = await reorderColumns(fastify.database, board.id, request.body.columnIds)
+      if (!reordered) {
+        void reply
+          .code(400)
+          .send({ error: 'Bad Request', message: 'columnIds do not match this board' })
+        return
+      }
+      void reply.code(204).send()
     }
   )
 
