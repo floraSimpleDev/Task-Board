@@ -1,8 +1,7 @@
-import { type FC } from 'react'
-import './index.css'
+import type { FC } from 'react'
 
-const App: FC = () => (
-  <h1 className="text-3xl font-bold tracking-tight text-gray-900">Hello Task Board</h1>
-)
+import HomePage from '@/pages/HomePage'
+
+const App: FC = () => <HomePage />
 
 export default App
