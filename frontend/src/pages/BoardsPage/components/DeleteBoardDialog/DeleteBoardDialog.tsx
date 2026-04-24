@@ -20,22 +20,15 @@ interface Props {
 }
 
 const DeleteBoardDialog: FC<Props> = ({ boardId, boardTitle }) => {
-  const deleteBoard = useDeleteBoard()
+  const { trigger, isMutating, error } = useDeleteBoard()
   const [open, setOpen] = useState(false)
-  const [deleting, setDeleting] = useState(false)
 
-  const handleConfirm = async (): Promise<void> => {
-    setDeleting(true)
-    try {
-      await deleteBoard(boardId)
-      setOpen(false)
-    } finally {
-      setDeleting(false)
-    }
-  }
-
-  const onConfirm = (): void => {
-    void handleConfirm()
+  const handleConfirm = (): void => {
+    void trigger(boardId, {
+      onSuccess: () => {
+        setOpen(false)
+      },
+    })
   }
 
   return (
@@ -53,10 +46,11 @@ const DeleteBoardDialog: FC<Props> = ({ boardId, boardTitle }) => {
             cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
+        {error && <p className="text-destructive text-sm">Failed to delete: {error.message}</p>}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={deleting}>
-            {deleting ? 'Deleting...' : 'Delete'}
+          <AlertDialogCancel disabled={isMutating}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleConfirm} disabled={isMutating}>
+            {isMutating ? 'Deleting...' : 'Delete'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
