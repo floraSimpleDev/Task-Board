@@ -2,6 +2,7 @@ import type { FC } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import AuthenticatedRoute from '@/components/AuthenticatedRoute'
+import BoardDetailPage from '@/pages/BoardDetailPage'
 import BoardsPage from '@/pages/BoardsPage'
 import HomePage from '@/pages/HomePage'
 
@@ -11,6 +12,7 @@ const App: FC = () => (
       <Route path="/" element={<HomePage />} />
       <Route element={<AuthenticatedRoute />}>
         <Route path="/boards" element={<BoardsPage />} />
+        <Route path="/boards/:id" element={<BoardDetailPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
