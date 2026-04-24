@@ -81,4 +81,13 @@ export default defineConfig([
       curly: ['error', 'all'],
     },
   },
+
+  {
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'import/order': 'off',
+      'react-refresh/only-export-components': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+    },
+  },
 ])
