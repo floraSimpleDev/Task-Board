@@ -1,22 +1,15 @@
 import useSWR, { type SWRResponse } from 'swr'
-import { z } from 'zod'
+import type { z } from 'zod'
 
 import useAuthFetcher from '@/hooks/useAuthFetcher'
-import boardSchema from '@/schemas/board'
-import columnSchema from '@/schemas/column'
-import taskSchema from '@/schemas/task'
+import boardWithColumnsSchema from '@/schemas/boardWithColumns'
 
-const schema = boardSchema.extend({
-  columns: z.array(
-    columnSchema.extend({
-      tasks: z.array(taskSchema),
-    })
-  ),
-})
-
-type BoardWithColumns = z.infer<typeof schema>
+type BoardWithColumns = z.infer<typeof boardWithColumnsSchema>
 
 const useBoard = (boardId: string | undefined): SWRResponse<BoardWithColumns, Error> =>
-  useSWR<BoardWithColumns, Error>(boardId ? `/boards/${boardId}` : null, useAuthFetcher(schema))
+  useSWR<BoardWithColumns, Error>(
+    boardId ? `/boards/${boardId}` : null,
+    useAuthFetcher(boardWithColumnsSchema)
+  )
 
 export default useBoard
