@@ -10,6 +10,7 @@ import boardsRoute from '@/routes/boardsRoute'
 import columnsRoute from '@/routes/columnsRoute'
 import healthRoute from '@/routes/healthRoute'
 import meRoute from '@/routes/meRoute'
+import tasksRoute from '@/routes/tasksRoute'
 
 const buildApp = async (): Promise<FastifyInstance> => {
   const app = Fastify({ logger: true })
@@ -24,6 +25,7 @@ const buildApp = async (): Promise<FastifyInstance> => {
   await app.register(meRoute)
   await app.register(boardsRoute)
   await app.register(columnsRoute)
+  await app.register(tasksRoute)
   await app.register(adminRoute)
 
   return app

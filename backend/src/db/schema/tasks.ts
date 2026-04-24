@@ -14,7 +14,7 @@ export const tasks = pgTable(
     title: text('title').notNull(),
     description: text('description'),
     priority: taskPriority('priority'),
-    position: numeric('position', { precision: 20, scale: 10 }).notNull(),
+    position: numeric('position', { precision: 20, scale: 10, mode: 'number' }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).$onUpdate(() => new Date()),
   },
