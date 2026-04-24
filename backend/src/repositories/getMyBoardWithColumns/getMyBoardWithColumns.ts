@@ -3,12 +3,18 @@ import { and, asc, eq } from 'drizzle-orm'
 import type { Database } from '@/db/createDrizzleClient/createDrizzleClient'
 import { boardColumns } from '@/db/schema/boardColumns'
 import { boards } from '@/db/schema/boards'
+import { tasks } from '@/db/schema/tasks'
 
 type Board = typeof boards.$inferSelect
 type Column = typeof boardColumns.$inferSelect
+type Task = typeof tasks.$inferSelect
+
+interface ColumnWithTasks extends Column {
+  tasks: Task[]
+}
 
 interface BoardWithColumns extends Board {
-  columns: Column[]
+  columns: ColumnWithTasks[]
 }
 
 const getMyBoardWithColumns = async (
@@ -21,15 +27,16 @@ const getMyBoardWithColumns = async (
     with: {
       columns: {
         orderBy: asc(boardColumns.position),
+        with: {
+          tasks: {
+            orderBy: asc(tasks.position),
+          },
+        },
       },
     },
   })
 
-  if (!board) {
-    return null
-  }
-
-  return board
+  return board ?? null
 }
 
 export default getMyBoardWithColumns
