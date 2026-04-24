@@ -1,10 +1,8 @@
 import { useAuth0 } from '@auth0/auth0-react'
 import type { FC } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, Outlet } from 'react-router-dom'
 
-import LoginView from './components/LoginView'
-
-const HomePage: FC = () => {
+const AuthenticatedRoute: FC = () => {
   const { isAuthenticated, isLoading } = useAuth0()
 
   if (isLoading) {
@@ -15,7 +13,7 @@ const HomePage: FC = () => {
     )
   }
 
-  return isAuthenticated ? <Navigate to="/boards" replace /> : <LoginView />
+  return isAuthenticated ? <Outlet /> : <Navigate to="/" replace />
 }
 
-export default HomePage
+export default AuthenticatedRoute

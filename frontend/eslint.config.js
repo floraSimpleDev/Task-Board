@@ -88,6 +88,8 @@ export default defineConfig([
       'import/order': 'off',
       'react-refresh/only-export-components': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-redundant-type-constituents': 'off',
     },
   },
 ])

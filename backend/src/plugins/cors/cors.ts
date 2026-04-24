@@ -12,6 +12,8 @@ const cors: FastifyPluginAsync = async (fastify) => {
   await fastify.register(fastifyCors, {
     origin,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 }
 
