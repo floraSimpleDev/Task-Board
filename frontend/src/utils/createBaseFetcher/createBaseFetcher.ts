@@ -22,6 +22,10 @@ const createBaseFetcher =
       throw new Error(`${String(response.status)} ${response.statusText}`)
     }
 
+    if (response.status === 204) {
+      return schema.parse(undefined)
+    }
+
     return schema.parse(await response.json())
   }
 
