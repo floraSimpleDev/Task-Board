@@ -1,6 +1,8 @@
 import { useAuth0 } from '@auth0/auth0-react'
 import type { FC } from 'react'
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
+
+import Layout from '@/components/Layout'
 
 const AuthenticatedRoute: FC = () => {
   const { isAuthenticated, isLoading } = useAuth0()
@@ -13,7 +15,7 @@ const AuthenticatedRoute: FC = () => {
     )
   }
 
-  return isAuthenticated ? <Outlet /> : <Navigate to="/" replace />
+  return isAuthenticated ? <Layout /> : <Navigate to="/" replace />
 }
 
 export default AuthenticatedRoute
