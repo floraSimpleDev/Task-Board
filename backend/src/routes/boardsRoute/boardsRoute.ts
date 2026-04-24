@@ -3,12 +3,13 @@ import type { FastifyPluginAsync } from 'fastify'
 
 import createBoard from '@/repositories/createBoard'
 import deleteBoard from '@/repositories/deleteBoard'
-import getMyBoard from '@/repositories/getMyBoard'
+import getMyBoardWithColumns from '@/repositories/getMyBoardWithColumns'
 import listMyBoards from '@/repositories/listMyBoards'
 import updateBoard from '@/repositories/updateBoard'
 import boardIdParamsSchema from '@/types/boardIdParamsSchema'
 import boardListSchema from '@/types/boardListSchema'
 import boardSchema from '@/types/boardSchema'
+import boardWithColumnsSchema from '@/types/boardWithColumnsSchema'
 import createBoardSchema from '@/types/createBoardSchema'
 import updateBoardSchema from '@/types/updateBoardSchema'
 
@@ -30,10 +31,14 @@ const boardsRoute: FastifyPluginAsync = async (fastify) => {
     '/boards/:id',
     {
       preHandler: fastify.authenticate,
-      schema: { params: boardIdParamsSchema, response: { 200: boardSchema } },
+      schema: { params: boardIdParamsSchema, response: { 200: boardWithColumnsSchema } },
     },
     async (request, reply) => {
-      const board = await getMyBoard(fastify.database, request.params.id, request.dbUser.id)
+      const board = await getMyBoardWithColumns(
+        fastify.database,
+        request.params.id,
+        request.dbUser.id
+      )
       if (!board) {
         void reply.code(404).send({ error: 'Not Found', message: 'Board not found' })
         return

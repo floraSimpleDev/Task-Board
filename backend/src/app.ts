@@ -7,6 +7,7 @@ import database from '@/plugins/database'
 import swagger from '@/plugins/swagger'
 import adminRoute from '@/routes/adminRoute'
 import boardsRoute from '@/routes/boardsRoute'
+import columnsRoute from '@/routes/columnsRoute'
 import healthRoute from '@/routes/healthRoute'
 import meRoute from '@/routes/meRoute'
 
@@ -22,6 +23,7 @@ const buildApp = async (): Promise<FastifyInstance> => {
   await app.register(healthRoute)
   await app.register(meRoute)
   await app.register(boardsRoute)
+  await app.register(columnsRoute)
   await app.register(adminRoute)
 
   return app
