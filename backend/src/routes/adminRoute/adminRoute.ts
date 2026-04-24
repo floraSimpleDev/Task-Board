@@ -12,8 +12,8 @@ const adminRoute: FastifyPluginAsync = async (fastify) => {
       schema: { response: { 200: adminStatsSchema } },
     },
     async () => {
-      const aalBoards = await countBoards(fastify.database)
-      return { aalBoards }
+      const totalBoards = await countBoards(fastify.database)
+      return { totalBoards }
     }
   )
 }
