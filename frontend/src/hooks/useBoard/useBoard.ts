@@ -4,9 +4,14 @@ import { z } from 'zod'
 import useAuthFetcher from '@/hooks/useAuthFetcher'
 import boardSchema from '@/schemas/board'
 import columnSchema from '@/schemas/column'
+import taskSchema from '@/schemas/task'
 
 const schema = boardSchema.extend({
-  columns: z.array(columnSchema),
+  columns: z.array(
+    columnSchema.extend({
+      tasks: z.array(taskSchema),
+    })
+  ),
 })
 
 type BoardWithColumns = z.infer<typeof schema>
