@@ -2,9 +2,9 @@ import { useAuth0 } from '@auth0/auth0-react'
 import type { FC } from 'react'
 import { Navigate } from 'react-router-dom'
 
-import Layout from '@/components/Layout'
+import Layout from '@/pages/AuthenticatedGuard/Layout'
 
-const AuthenticatedRoute: FC = () => {
+const AuthenticatedGuard: FC = () => {
   const { isAuthenticated, isLoading } = useAuth0()
 
   if (isLoading) {
@@ -18,4 +18,4 @@ const AuthenticatedRoute: FC = () => {
   return isAuthenticated ? <Layout /> : <Navigate to="/" replace />
 }
 
-export default AuthenticatedRoute
+export default AuthenticatedGuard

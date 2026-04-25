@@ -21,10 +21,6 @@ const BoardsPage: FC = () => {
 
       {error && <p className="text-destructive">Failed to load boards: {error.message}</p>}
 
-      {boards?.length === 0 && (
-        <p className="text-muted-foreground">No boards yet. Create one to get started.</p>
-      )}
-
       {boards?.length ? (
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {boards.map((board) => (
@@ -45,7 +41,9 @@ const BoardsPage: FC = () => {
             </li>
           ))}
         </ul>
-      ) : null}
+      ) : (
+        <p className="text-muted-foreground">No boards yet. Create one to get started.</p>
+      )}
     </main>
   )
 }
