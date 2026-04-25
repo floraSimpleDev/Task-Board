@@ -1,7 +1,7 @@
 import type { Database } from '@/db/createDrizzleClient/createDrizzleClient'
 import { users } from '@/db/schema/users'
-import createOrUpdateUser from '@/repositories/createOrUpdateUser'
-import getAuthedUser from '@/repositories/getAuthedUser'
+import createOrUpdateUser from '@/repositories/users/createOrUpdateUser'
+import getAuthedUser from '@/repositories/users/getAuthedUser'
 import resolveProfile from '@/services/resolveProfile'
 
 type LocalUser = typeof users.$inferSelect

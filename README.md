@@ -4,6 +4,125 @@ Build a task board application where authenticated users create, organise, and t
 
 ---
 
+## Getting started
+
+```bash
+# 1. clone
+git clone https://github.com/floraSimpleDev/Task-Board.git
+cd Task-Board
+
+# 2. install workspace deps (frontend + backend)
+npm install
+
+# 3. copy env templates
+cp backend/.env.example backend/.env       # fill in DATABASE_URL + AUTH0_*
+cp frontend/.env.example frontend/.env     # fill in VITE_AUTH0_* if present
+```
+
+`npm install` at the repo root installs both workspaces in one pass — there is no need to `cd backend && npm install` separately.
+
+---
+
+## Local development (docker-compose)
+
+Run Postgres in Docker, run the dev servers on the host. Vite + Fastify hot-reload locally; only the database is containerized for dev.
+
+```bash
+# 1. start Postgres (matches DATABASE_URL in backend/.env.example)
+docker compose up -d postgres
+
+# 2. apply schema
+npm run db:migrate -w backend
+
+# 3. (optional) seed demo data
+npm run db:seed -w backend
+
+# 4. run dev servers in two terminals
+npm run dev:backend     # http://localhost:3000
+npm run dev:frontend    # http://localhost:5173
+```
+
+### Database tooling (Drizzle)
+
+```bash
+npm run db:generate -w backend   # generate SQL migration from schema changes
+npm run db:migrate  -w backend   # apply pending migrations
+npm run db:push     -w backend   # push schema directly (dev only — skips migration files)
+npm run db:seed     -w backend   # idempotent demo data; only touches the seed user
+npm run db:studio   -w backend   # Drizzle Studio UI at https://local.drizzle.studio
+```
+
+### API docs (Swagger UI)
+
+The Fastify server exposes interactive API documentation while running in dev. With `npm run dev:backend` up, open:
+
+```
+http://localhost:3000/docs
+```
+
+The page lists every endpoint, the TypeBox-derived request/response schemas, and lets you fire authenticated requests against the running API (paste a Bearer JWT into the "Authorize" dialog at the top — get one from your browser's dev tools after signing in via Auth0 in the SPA, or via Auth0's "Test" tab).
+
+## Kubernetes deployment (kind / minikube)
+
+Everything lives under [k8s/](k8s/). The [k8s/manage.sh](k8s/manage.sh) script wraps every operation a reviewer needs.
+
+### Cluster setup
+
+In addition to the [top-level Prerequisites](#prerequisites), you need a running local cluster — **kind is the primary target**, minikube also works:
+
+```bash
+# kind (recommended)
+kind create cluster --name task-board
+
+# OR minikube
+minikube start
+```
+
+### Deploy
+
+```bash
+./k8s/manage.sh deploy
+```
+
+What this does:
+
+1. Builds three local Docker images: `task-board-backend`, `task-board-backend-migrate` (builder stage of the same Dockerfile, used by the migration Job), `task-board-frontend`.
+2. Loads them into the running cluster (auto-detects kind vs minikube).
+3. Applies the namespace, generates Secrets from `k8s/.env`, applies Postgres → migration Job → backend → frontend in dependency order.
+4. Waits for each rollout and the migration Job before returning.
+
+The deploy is **idempotent** — re-running reconciles via `kubectl apply` and recreates Jobs (which are immutable in Kubernetes).
+
+### Access the app
+
+The frontend Service is `NodePort 30080`.
+
+```bash
+# kind: requires extraPortMappings on the cluster, OR use port-forward:
+kubectl port-forward -n taskboard service/frontend 8080:80
+# → http://localhost:8080
+
+# minikube:
+minikube service -n taskboard frontend
+```
+
+### Other commands
+
+```bash
+./k8s/manage.sh status              # pods, services, PVCs, jobs
+./k8s/manage.sh logs backend        # tail backend logs
+./k8s/manage.sh logs frontend       # tail nginx logs
+./k8s/manage.sh logs postgres       # tail postgres logs
+./k8s/manage.sh logs migrate        # last migration Job logs
+./k8s/manage.sh logs seed           # last seed Job logs
+./k8s/manage.sh migrate             # re-run migrations
+./k8s/manage.sh seed                # load demo data (opt-in)
+./k8s/manage.sh port-forward-db     # localhost:5432 → cluster postgres
+./k8s/manage.sh teardown            # delete the namespace (drops all data)
+```
+
+---
+
 ## Tech stack
 
 ### Frontend
@@ -53,68 +172,6 @@ Build a task board application where authenticated users create, organise, and t
 
 ---
 
-## Prerequisites
-
-| Tool       | Version    | Purpose                                                |
-| ---------- | ---------- | ------------------------------------------------------ |
-| Node.js    | `>= 24`    | Enforced via `engines` + `engine-strict=true`          |
-| npm        | `>= 10`    | Bundled with Node 24; the repo uses npm workspaces     |
-| Docker     | latest     | Local Postgres (compose) and image builds for K8s      |
-| `kubectl`  | latest     | K8s deploy path only                                   |
-| `kind`     | latest     | K8s deploy path only — primary local cluster target    |
-| `minikube` | optional   | Alternative local cluster                              |
-| Auth0      | free tier  | One SPA Application + one API (see checklist below)    |
-
----
-
-## Getting started
-
-```bash
-# 1. clone
-git clone https://github.com/floraSimpleDev/Task-Board.git
-cd Task-Board
-
-# 2. install workspace deps (frontend + backend)
-npm install
-
-# 3. copy env templates
-cp backend/.env.example backend/.env       # fill in DATABASE_URL + AUTH0_*
-cp frontend/.env.example frontend/.env     # fill in VITE_AUTH0_* if present
-```
-
-`npm install` at the repo root installs both workspaces in one pass — there is no need to `cd backend && npm install` separately.
-
----
-
-## Local development (docker-compose)
-
-Run Postgres in Docker, run the dev servers on the host. Vite + Fastify hot-reload locally; only the database is containerized for dev.
-
-```bash
-# 1. start Postgres (matches DATABASE_URL in backend/.env.example)
-docker compose up -d postgres
-
-# 2. apply schema
-npm run db:migrate -w backend
-
-# 3. (optional) seed demo data
-npm run db:seed -w backend
-
-# 4. run dev servers in two terminals
-npm run dev:backend     # http://localhost:3000
-npm run dev:frontend    # http://localhost:5173
-```
-
-### Database tooling (Drizzle)
-
-```bash
-npm run db:generate -w backend   # generate SQL migration from schema changes
-npm run db:migrate  -w backend   # apply pending migrations
-npm run db:push     -w backend   # push schema directly (dev only — skips migration files)
-npm run db:seed     -w backend   # idempotent demo data; only touches the seed user
-npm run db:studio   -w backend   # Drizzle Studio UI at https://local.drizzle.studio
-```
-
 ### Quality checks
 
 The repo runs lint / type-check / format, you can run these in either frontend or backend:
@@ -138,22 +195,6 @@ npm run format:frontend
 ```
 
 ---
-
-## Kubernetes deployment (kind / minikube)
-
-Everything lives under [k8s/](k8s/). The [k8s/manage.sh](k8s/manage.sh) script wraps every operation a reviewer needs.
-
-### Cluster setup
-
-In addition to the [top-level Prerequisites](#prerequisites), you need a running local cluster — **kind is the primary target**, minikube also works:
-
-```bash
-# kind (recommended)
-kind create cluster --name task-board
-
-# OR minikube
-minikube start
-```
 
 ### High-level architecture
 
@@ -196,49 +237,6 @@ cp k8s/.env.example k8s/.env
 `k8s/.env` is gitignored. The script generates the `postgres-credentials` and `backend-secrets` Secrets from this file at deploy time, so no credentials are ever committed.
 Secrets are generated at deploy time from a local `.env` file and never stored in Git.  
 This ensures sensitive data (DB password, Auth0 config) is not exposed in version control.
-
-### Deploy
-
-```bash
-./k8s/manage.sh deploy
-```
-
-What this does:
-
-1. Builds three local Docker images: `task-board-backend`, `task-board-backend-migrate` (builder stage of the same Dockerfile, used by the migration Job), `task-board-frontend`.
-2. Loads them into the running cluster (auto-detects kind vs minikube).
-3. Applies the namespace, generates Secrets from `k8s/.env`, applies Postgres → migration Job → backend → frontend in dependency order.
-4. Waits for each rollout and the migration Job before returning.
-
-The deploy is **idempotent** — re-running reconciles via `kubectl apply` and recreates Jobs (which are immutable in Kubernetes).
-
-### Access the app
-
-The frontend Service is `NodePort 30080`.
-
-```bash
-# kind: requires extraPortMappings on the cluster, OR use port-forward:
-kubectl port-forward -n taskboard service/frontend 8080:80
-# → http://localhost:8080
-
-# minikube:
-minikube service -n taskboard frontend
-```
-
-### Other commands
-
-```bash
-./k8s/manage.sh status              # pods, services, PVCs, jobs
-./k8s/manage.sh logs backend        # tail backend logs
-./k8s/manage.sh logs frontend       # tail nginx logs
-./k8s/manage.sh logs postgres       # tail postgres logs
-./k8s/manage.sh logs migrate        # last migration Job logs
-./k8s/manage.sh logs seed           # last seed Job logs
-./k8s/manage.sh migrate             # re-run migrations
-./k8s/manage.sh seed                # load demo data (opt-in)
-./k8s/manage.sh port-forward-db     # localhost:5432 → cluster postgres
-./k8s/manage.sh teardown            # delete the namespace (drops all data)
-```
 
 ---
 
