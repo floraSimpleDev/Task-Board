@@ -21,71 +21,23 @@ Keep it simple: No managed DB operators, no service mesh, no GitOps, no Terrafor
 
 # Next steps:
 
-Refined plan
+**❌ Missing (infra + docs)**
 
-```markdown
-✅ User auto-provision (done)
-       ↓
-1. Board CRUD (backend) ──┬─→ Board UI (list/create/rename/delete)
-                          └─ extract `getOwnedBoard` service early ⚠️
-       ↓
-2. Column CRUD (backend) ─→ Column UI (visible inside a single board)
-       ↓
-3. Task CRUD (backend) ───→ Task UI (priority badge, description, etc.)
-       ↓
-4. Reorder ─────────────────→ drag-and-drop + optimistic update
-   ├─ Column reorder within board (integer + deferrable swap)
-   ├─ Task reorder within column (fractional midpoint)
-   └─ Task move between columns (also fractional midpoint, just different parent)
-```
+1. **Dockerfiles** — backend and frontend, multi-stage
+2. **Kubernetes manifests** — API Deployment, frontend Deployment, Postgres StatefulSet + PVC, ConfigMaps/Secrets, liveness/readiness probes, resource requests/limits
+3. **Management script** — `deploy`, `teardown`, `status`, `logs <service>`
+4. **README** — setup, k8s deploy, Auth0 checklist, architecture notes, "what I'd improve"
+5. **Seed data** (optional but useful)
+6. **Optional bonus** — pick at most one: WebSocket real-time / multi-replica scaling / activity log / ingress+TLS
+7. **Browser smoke-test** — the DnD is green on types/lint/build but hasn't been exercised in a real browser yet
 
-Three things worth deciding upfront
-1. Build small UI per phase, not "all backend then all frontend"
-Doing all backend then all frontend means weeks of curl testing. Suggest vertical-slice per phase: ship a minimal UI for each entity as you finish its backend. The UI is your dogfooding harness — you'll catch API ergonomics bugs immediately, not weeks later. The backend → UI arrows in your plan already imply this; just be explicit about it.
+**My recommended order:**
 
-2. Authorization helper — extract early
-Every endpoint after /me needs the same check: "is this board / column / task owned by request.dbUser?" If you spread this logic across handlers, you'll have inconsistencies. Build it once in phase 1:
+1. **Browser smoke-test DnD** first (cheapest risk reduction — anything broken here blocks the rest).
+2. **Dockerfiles** — k8s needs them.
+3. **Kubernetes manifests + management script** — big-ticket requirement.
+4. **README** — ties everything together, arguably the most visible to the reviewer.
+5. **Seed data** — quick win.
+6. **Bonus** — only if time allows; the brief says "we'd rather see the core done well."
 
-
-```ts
-// services/getOwnedBoard/getOwnedBoard.ts
-const getOwnedBoard = async (database, boardId, userId): Promise<Board> => {
-  const board = await database.query.boards.findFirst({
-    where: and(eq(boards.id, boardId), eq(boards.userId, userId)),
-  })
-  if (!board) {
-    throw new NotFoundError('Board not found')   // 404, not 403 (don't leak existence)
-  }
-  return board
-}
-```
-
-Then column / task handlers reuse it: "load the column, get its board via getOwnedBoard, then proceed." Single source of truth for ownership = no possible authorization bypass.
-
-3. Reorder needs design, not just code
-Save reorder for last on the implementation timeline, but decide the API shape during phase 2 (columns) so the frontend knows what to expect:
-
-
-| Operation                      | API shape                                                                                   |
-| ------------------------------ | ------------------------------------------------------------------------------------------- |
-| Reorder columns within a board | `PATCH /boards/:id/columns/reorder` body `{ columnIds: [id1, id2, ...] }` (full ordering)   |
-| Reorder task within a column   | `PATCH /tasks/:id/position` body `{ position: 2.5 }` (caller computes midpoint client-side) |
-| Move task between columns      | Same endpoint as above, body `{ position: 2.5, columnId: 'new-uuid' }`                      |
-
-
-These are intentionally different because the underlying mechanics differ (full-renumber vs single-row update). The "caller computes midpoint client-side" pattern is what makes optimistic updates trivial — frontend computes the new fractional position, applies it locally, sends to backend.
-
-What I'd ship in phase 1 (board CRUD) to validate the pattern
-- Backend: `POST /boards`, `GET /boards`, `GET /boards/:id`, `PATCH /boards/:id`, `DELETE /boards/:id` — all behind fastify.authenticate, all using getOwnedBoard for ownership
-- Repositories: `getOwnedBoard`, `listOwnedBoards`, `createBoard`, `updateBoard`, `deleteBoard`
-- Frontend: a `/boards` page with a list + "Create board" button + click-to-rename + delete confirmation. Routing via `react-router` (will need to add it)
-
-Once that's working, we have a proven pattern: schema → repos → service → route → SWR hook → page. The remaining phases just repeat this pattern with more entity-specific details.
-
-Ready to start?
-If yes, I'd kick off phase 1, board CRUD backend — schema is already there, just need:
-
-getOwnedBoard, listOwnedBoards, createBoard, updateBoard, deleteBoard repositories
-TypeBox schemas for board responses + create/update bodies
-boardsRoute plugin with the 5 endpoints
-Wire in app.ts
+Want to start with the browser test, or jump straight to Dockerfiles?
