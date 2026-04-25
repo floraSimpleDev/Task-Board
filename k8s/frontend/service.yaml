@@ -1,0 +1,22 @@
+# NodePort 30080 makes the SPA reachable in a browser at:
+#   http://localhost:30080  (kind with extraPortMappings, or `kubectl port-forward`)
+#   http://$(minikube ip):30080  (minikube)
+# The same Service is the only public entry point — backend is ClusterIP and
+# only reachable from inside the cluster (frontend nginx proxies /api/*).
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: taskboard
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: task-board
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      nodePort: 30080

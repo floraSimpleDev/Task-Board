@@ -19,6 +19,10 @@ backend/dist/
 .env.local
 .env.*.local
 
+# Kubernetes secrets — manage.sh generates these from k8s/.env, never commit.
+k8s/**/secret.yaml
+!k8s/**/secret.example.yaml
+
 # Editor directories
 .vscode/*
 !.vscode/extensions.json

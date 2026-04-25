@@ -5,8 +5,10 @@ FROM node:24-alpine AS builder
 WORKDIR /app
 ENV HUSKY=0
 
-# Vite env vars are embedded at build time; pass via --build-arg
-ARG VITE_API_URL=http://localhost:3000
+# Vite env vars are embedded at build time; pass via --build-arg.
+# VITE_API_URL is a relative path so nginx can proxy /api/* to the backend
+# Service in any environment (docker-compose, kind, minikube, prod).
+ARG VITE_API_URL=/api
 ARG VITE_AUTH0_DOMAIN=""
 ARG VITE_AUTH0_CLIENT_ID=""
 ARG VITE_AUTH0_AUDIENCE=""
@@ -31,7 +33,13 @@ RUN npm run build --workspace=frontend
 # ---------- runtime: nginx serving static bundle ----------
 FROM nginx:1.27-alpine AS runtime
 
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+# nginx's official entrypoint runs envsubst on every *.template file in
+# /etc/nginx/templates and writes the result to /etc/nginx/conf.d at startup.
+# NGINX_ENVSUBST_FILTER restricts substitution to BACKEND_URL so nginx-native
+# variables like $host, $remote_addr, $scheme are left untouched.
+ENV BACKEND_URL=http://backend:3000 \
+    NGINX_ENVSUBST_FILTER=BACKEND_URL
+COPY frontend/nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=builder /app/frontend/dist /usr/share/nginx/html
 
 EXPOSE 80
