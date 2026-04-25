@@ -2,16 +2,20 @@ import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { useSortable } from '@dnd-kit/sortable'
 import type { FC } from 'react'
+import type z from 'zod'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import type { Column } from '@/schemas/column/column'
-import type { Task } from '@/schemas/task/task'
+import type columnSchema from '@/schemas/column'
+import type taskSchema from '@/schemas/task'
 
 import DeleteColumnDialog from '../DeleteColumnDialog'
 
 import CreateTaskForm from './components/CreateTaskForm'
 import SortableTaskCard from './components/SortableTaskCard'
 
+type Column = z.infer<typeof columnSchema>
+
+type Task = z.infer<typeof taskSchema>
 type Sortable = ReturnType<typeof useSortable>
 
 interface DragHandleProps {

@@ -1,17 +1,15 @@
-import useSWRMutation, { type SWRMutationResponse } from 'swr/mutation'
+import type { SWRMutationResponse } from 'swr/mutation'
 import { z } from 'zod'
 
-import useAuthFetcher from '@/hooks/useAuthFetcher'
+import useResourceMutation from '@/hooks/useResourceMutation'
 
-const useDeleteColumn = (boardId: string): SWRMutationResponse<void, Error, string, string> => {
-  const fetcher = useAuthFetcher(z.void())
-  const key = `/boards/${boardId}`
+const voidSchema = z.void()
 
-  return useSWRMutation<void, Error, string, string>(
-    key,
-    async (_key, { arg: columnId }) => fetcher(`/columns/${columnId}`, { method: 'DELETE' }),
-    { throwOnError: false }
-  )
-}
+const useDeleteColumn = (boardId: string): SWRMutationResponse<void, Error, string, string> =>
+  useResourceMutation<typeof voidSchema, string>({
+    swrKey: `/boards/${boardId}`,
+    schema: voidSchema,
+    buildRequest: (columnId) => ({ url: `/columns/${columnId}`, method: 'DELETE' }),
+  })
 
 export default useDeleteColumn

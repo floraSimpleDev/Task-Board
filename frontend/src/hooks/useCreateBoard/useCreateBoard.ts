@@ -1,25 +1,20 @@
-import useSWRMutation, { type SWRMutationResponse } from 'swr/mutation'
+import type { SWRMutationResponse } from 'swr/mutation'
+import type z from 'zod'
 
-import useAuthFetcher from '@/hooks/useAuthFetcher'
-import boardSchema, { type Board } from '@/schemas/board/board'
+import useResourceMutation from '@/hooks/useResourceMutation'
+import boardSchema from '@/schemas/board'
+
+type Board = z.infer<typeof boardSchema>
 
 interface CreateBoardInput {
   title: string
 }
 
-const useCreateBoard = (): SWRMutationResponse<Board, Error, '/boards', CreateBoardInput> => {
-  const fetcher = useAuthFetcher(boardSchema)
-
-  return useSWRMutation<Board, Error, '/boards', CreateBoardInput>(
-    '/boards',
-    async (key, { arg }) =>
-      fetcher(key, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(arg),
-      }),
-    { throwOnError: false }
-  )
-}
+const useCreateBoard = (): SWRMutationResponse<Board, Error, string, CreateBoardInput> =>
+  useResourceMutation<typeof boardSchema, CreateBoardInput>({
+    swrKey: '/boards',
+    schema: boardSchema,
+    buildRequest: (input) => ({ url: '/boards', method: 'POST', body: input }),
+  })
 
 export default useCreateBoard

@@ -1,10 +1,14 @@
 import { type FC, useState } from 'react'
+import type z from 'zod'
 
 import { Card, CardContent } from '@/components/ui/card'
-import type { Task, TaskPriority } from '@/schemas/task/task'
+import type taskSchema from '@/schemas/task'
 import cn from '@/utils/cn'
 
 import EditTaskDialog from '../EditTaskDialog'
+
+type Task = z.infer<typeof taskSchema>
+type TaskPriority = 'P0' | 'P1' | 'P2'
 
 interface Props {
   boardId: string

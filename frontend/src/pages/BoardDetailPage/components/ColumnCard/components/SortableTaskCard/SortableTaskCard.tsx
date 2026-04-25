@@ -1,10 +1,13 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { FC } from 'react'
+import type z from 'zod'
 
-import type { Task } from '@/schemas/task/task'
+import type taskSchema from '@/schemas/task'
 
 import TaskCard from '../TaskCard'
+
+type Task = z.infer<typeof taskSchema>
 
 interface Props {
   boardId: string

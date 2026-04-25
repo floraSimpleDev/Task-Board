@@ -241,6 +241,71 @@ minikube service -n taskboard frontend
 
 ---
 
+## Data model
+
+```
+users (1) ──< boards (1) ──< board_columns (1) ──< tasks
+```
+
+| Relationship                  | FK                          | onDelete  |
+| ----------------------------- | --------------------------- | --------- |
+| `boards.user_id`              | → `users.id`                | `CASCADE` |
+| `board_columns.board_id`      | → `boards.id`               | `CASCADE` |
+| `tasks.board_column_id`       | → `board_columns.id`        | `CASCADE` |
+
+### What happens when a column containing tasks is deleted
+
+Deleting a column **also deletes every task in that column**. Postgres enforces this at the database level via `ON DELETE CASCADE` on `tasks.board_column_id` — there is no application-layer cleanup, no soft-delete, and no orphaned-task possibility. The same rule chains upward: deleting a board cascade-deletes its columns, which in turn cascade-delete their tasks; deleting a user cascade-deletes everything they own.
+
+**Why cascade and not restrict / soft-delete:**
+
+- **Simpler invariants.** No code path can leave orphaned tasks — the schema makes the bad state unrepresentable.
+- **Matches user intent.** When a user clicks "delete column", they expect the tasks to go with it; surfacing a "column has tasks, refuse" error would be poor UX for a personal kanban.
+- **Tradeoff:** destructive and irreversible. A real product would want soft-delete + an "Undo" toast or a 30-day recovery window. For this scope, hard cascade is the honest choice.
+
+### Indexes & constraints worth knowing
+
+- `boards_user_id_index` — every per-user board lookup hits an index.
+- `board_columns_board_id_position_key` — `UNIQUE(board_id, position)` prevents two columns at the same position.
+- `tasks_board_column_id_position_index` — composite index on `(board_column_id, position)` powers the ordered-task query in [getMyBoardWithColumns](backend/src/repositories/getMyBoardWithColumns/getMyBoardWithColumns.ts).
+- Task `position` is `numeric(20, 10)` — fractional indexing, so inserting between two tasks is `O(1)` (compute midpoint) rather than rewriting every position after the insertion point.
+
+### Non-trivial queries
+
+Two queries that go beyond simple CRUD:
+
+**1. Nested ordered fetch — [`getMyBoardWithColumns`](backend/src/repositories/getMyBoardWithColumns/getMyBoardWithColumns.ts)**
+
+Loads a board, all its columns ordered by `position`, and all tasks in each column ordered by `position`, scoped to the requesting `userId` — in a **single round-trip** via Drizzle's relational `with:` API:
+
+```ts
+database.query.boards.findFirst({
+  where: and(eq(boards.id, boardId), eq(boards.userId, userId)),
+  with: {
+    columns: {
+      orderBy: asc(boardColumns.position),
+      with: { tasks: { orderBy: asc(tasks.position) } },
+    },
+  },
+})
+```
+
+Why it matters: the naive implementation is `N+1` (one query per column to fetch its tasks). The relational form lets Drizzle emit a single SQL statement that joins + aggregates, and the `tasks_board_column_id_position_index` keeps the ordered fetch cheap.
+
+**2. Deferred-constraint position swap — [`reorderColumns`](backend/src/repositories/reorderColumns/reorderColumns.ts)**
+
+Reordering columns has to update multiple `position` values at once. With a naive `UPDATE`, two rows would briefly share the same `position`, violating the `UNIQUE(board_id, position)` constraint. The repository uses Postgres's deferred-constraint feature inside a transaction:
+
+```ts
+await transaction.execute(sql`SET CONSTRAINTS "board_columns_board_id_position_key" DEFERRED`)
+// ...UPDATEs that produce transiently-duplicate positions...
+// constraint is re-checked at COMMIT — by then positions are unique again
+```
+
+Why it matters: avoids the alternatives (deleting + reinserting, or moving rows through a "parking" position), preserves the unique constraint, and keeps the operation atomic. Demonstrates a Postgres-specific feature (`SET CONSTRAINTS ... DEFERRED`) that most ORMs don't expose without escape hatches.
+
+---
+
 ## Auth0 configuration checklist
 
 The backend verifies JWTs via Auth0's JWKS; the frontend uses the Auth0 SPA SDK. You need a free-tier Auth0 tenant with **one Application** and **one API**.

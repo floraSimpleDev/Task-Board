@@ -17,27 +17,3 @@ Optional (pick one at most): WebSocket real-time updates, multi-replica horizont
 Deliverables: Git repo with incremental commits. A README covering local setup (ideally docker-compose up), K8s deployment targeting minikube/kind, Auth0 configuration checklist, architecture decisions with trade-offs, and what you’d improve given more time. A /k8s directory with your manifests and management script. Migrations and optional seed data. 
 
 Keep it simple: No managed DB operators, no service mesh, no GitOps, no Terraform, no CI/CD pipeline. If something in this brief is ambiguous, make a decision and document it — that’s part of the exercise. We will run your code, deploy your manifests to a local cluster, and read everything as if reviewing a PR from a teammate. The Auth0 free tier is sufficient.
-
-
-# Next steps:
-
-**❌ Missing (infra + docs)**
-
-1. **Dockerfiles** — backend and frontend, multi-stage
-2. **Kubernetes manifests** — API Deployment, frontend Deployment, Postgres StatefulSet + PVC, ConfigMaps/Secrets, liveness/readiness probes, resource requests/limits
-3. **Management script** — `deploy`, `teardown`, `status`, `logs <service>`
-4. **README** — setup, k8s deploy, Auth0 checklist, architecture notes, "what I'd improve"
-5. **Seed data** (optional but useful)
-6. **Optional bonus** — pick at most one: WebSocket real-time / multi-replica scaling / activity log / ingress+TLS
-7. **Browser smoke-test** — the DnD is green on types/lint/build but hasn't been exercised in a real browser yet
-
-**My recommended order:**
-
-1. **Browser smoke-test DnD** first (cheapest risk reduction — anything broken here blocks the rest).
-2. **Dockerfiles** — k8s needs them.
-3. **Kubernetes manifests + management script** — big-ticket requirement.
-4. **README** — ties everything together, arguably the most visible to the reviewer.
-5. **Seed data** — quick win.
-6. **Bonus** — only if time allows; the brief says "we'd rather see the core done well."
-
-Want to start with the browser test, or jump straight to Dockerfiles?

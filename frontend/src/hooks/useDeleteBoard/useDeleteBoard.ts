@@ -1,16 +1,15 @@
-import useSWRMutation, { type SWRMutationResponse } from 'swr/mutation'
+import type { SWRMutationResponse } from 'swr/mutation'
 import { z } from 'zod'
 
-import useAuthFetcher from '@/hooks/useAuthFetcher'
+import useResourceMutation from '@/hooks/useResourceMutation'
 
-const useDeleteBoard = (): SWRMutationResponse<void, Error, '/boards', string> => {
-  const fetcher = useAuthFetcher(z.void())
+const voidSchema = z.void()
 
-  return useSWRMutation<void, Error, '/boards', string>(
-    '/boards',
-    async (_key, { arg: boardId }) => fetcher(`/boards/${boardId}`, { method: 'DELETE' }),
-    { throwOnError: false }
-  )
-}
+const useDeleteBoard = (): SWRMutationResponse<void, Error, string, string> =>
+  useResourceMutation<typeof voidSchema, string>({
+    swrKey: '/boards',
+    schema: voidSchema,
+    buildRequest: (boardId) => ({ url: `/boards/${boardId}`, method: 'DELETE' }),
+  })
 
 export default useDeleteBoard
