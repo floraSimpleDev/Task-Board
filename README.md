@@ -269,14 +269,18 @@ This ensures sensitive data (DB password, Auth0 config) is not exposed in versio
 ## Data model
 
 ```
-users (1) ──< boards (1) ──< board_columns (1) ──< tasks
+users (1) ──< boards (1) ──< board_columns (1) ──< tasks (1) ──< task_activities
+                                                                       │
+                                                       users (1) ──────┘  (actor, nullable)
 ```
 
-| Relationship                  | FK                          | onDelete  |
-| ----------------------------- | --------------------------- | --------- |
-| `boards.user_id`              | → `users.id`                | `CASCADE` |
-| `board_columns.board_id`      | → `boards.id`               | `CASCADE` |
-| `tasks.board_column_id`       | → `board_columns.id`        | `CASCADE` |
+| Relationship                  | FK                          | onDelete   |
+| ----------------------------- | --------------------------- | ---------- |
+| `boards.user_id`              | → `users.id`                | `CASCADE`  |
+| `board_columns.board_id`      | → `boards.id`               | `CASCADE`  |
+| `tasks.board_column_id`       | → `board_columns.id`        | `CASCADE`  |
+| `task_activities.task_id`     | → `tasks.id`                | `CASCADE`  |
+| `task_activities.actor_id`    | → `users.id`                | `SET NULL` |
 
 ### What happens when a column containing tasks is deleted
 
@@ -293,6 +297,7 @@ Deleting a column **also deletes every task in that column**. Postgres enforces 
 - `boards_user_id_index` — every per-user board lookup hits an index.
 - `board_columns_board_id_position_key` — `UNIQUE(board_id, position)` prevents two columns at the same position.
 - `tasks_board_column_id_position_index` — composite index on `(board_column_id, position)` powers the ordered-task query in [getMyBoardWithColumns](backend/src/repositories/getMyBoardWithColumns/getMyBoardWithColumns.ts).
+- `task_activities_task_id_created_at_index` — composite index on `(task_id, created_at)` powers the timeline query (filter by task, order by time).
 - Task `position` is `numeric(20, 10)` — fractional indexing, so inserting between two tasks is `O(1)` (compute midpoint) rather than rewriting every position after the insertion point.
 
 ### Non-trivial queries
@@ -352,6 +357,39 @@ The backend verifies JWTs via Auth0's JWKS; the frontend uses the Auth0 SPA SDK.
 ### Frontend build-time vars
 
 Vite embeds env vars at build time. For local dev, put them in `frontend/.env`. For the K8s deploy, [k8s/manage.sh](k8s/manage.sh) reads `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `AUTH0_CLIENT_ID`, and `AUTH0_REDIRECT_URI` from `k8s/.env` and passes them through as `--build-arg VITE_AUTH0_*=...` when building the frontend image — same source of truth for both paths.
+
+---
+
+## Optional bonus: task activity log
+
+Picked the **task activity log** from the optional list. Each task has a per-task timeline visible in the edit dialog.
+
+### What gets logged
+
+| Action      | When                                                          | Payload (`changes` jsonb)                                  |
+| ----------- | ------------------------------------------------------------- | ---------------------------------------------------------- |
+| `created`   | A task is created                                             | `{ title, boardColumnId }`                                 |
+| `updated`   | `title`, `description`, or `priority` changes (same column)   | Per-field `{ from, to }` deltas                            |
+| `moved`     | `boardColumnId` changes                                       | `{ fromBoardColumnId, toBoardColumnId }`                   |
+
+Pure position-only changes within the same column are **not** logged — they're noisy reorders, not user-meaningful events.
+
+### Atomicity
+
+Activity inserts run **in the same transaction** as the underlying task mutation ([tasksRoute.ts](backend/src/routes/tasksRoute/tasksRoute.ts)). The activity row can never disagree with task state.
+
+### Why deletion is not logged
+
+`task_activities.task_id` is `ON DELETE CASCADE`. Logging a `'deleted'` row would vanish in the same transaction the task does. Keeping deletion history would require denormalizing task title onto the activity row and severing the FK, which is more than this scope warrants. The honest trade-off is: the timeline exists for the lifetime of the task it describes.
+
+### Why `actor_id` is `SET NULL`, not `CASCADE`
+
+When a user is deleted (cascading away their boards / columns / tasks), the tasks vanish and their activities go with them — `actor_id` cascade-from-user wouldn't see those rows anyway. But for the case where a future feature lets two users collaborate on the same board, `SET NULL` preserves the timeline entries authored by a removed collaborator (rendered as "Someone" on the frontend).
+
+### Surface
+
+- `GET /tasks/:id/activities` — gated by the same ownership check as the rest of the task routes; joins `users` for the actor's display name.
+- Frontend timeline lives inside [EditTaskDialog](frontend/src/pages/BoardDetailPage/components/ColumnCard/components/EditTaskDialog/) — fetched lazily when the dialog opens, revalidated on save.
 
 ---
 

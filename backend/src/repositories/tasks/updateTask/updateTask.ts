@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 
-import type { Database } from '@/db/createDrizzleClient/createDrizzleClient'
+import type { Executor } from '@/db/createDrizzleClient/createDrizzleClient'
 import { tasks } from '@/db/schema/tasks'
 
 type Task = typeof tasks.$inferSelect
@@ -14,11 +14,11 @@ interface UpdateTaskInput {
 }
 
 const updateTask = async (
-  database: Database,
+  executor: Executor,
   taskId: string,
   input: UpdateTaskInput
 ): Promise<Task | null> => {
-  const updated = await database.update(tasks).set(input).where(eq(tasks.id, taskId)).returning()
+  const updated = await executor.update(tasks).set(input).where(eq(tasks.id, taskId)).returning()
 
   return updated[0] ?? null
 }
