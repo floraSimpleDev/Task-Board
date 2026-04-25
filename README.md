@@ -165,7 +165,7 @@ minikube start
 
 ### Request flow
 
-```md
+```txt
 Browser
   ↓
 http://localhost:30080
@@ -189,7 +189,8 @@ postgres StatefulSet pod
 
 ```bash
 cp k8s/.env.example k8s/.env
-# edit k8s/.env: set POSTGRES_PASSWORD, AUTH0_DOMAIN, AUTH0_AUDIENCE
+# edit k8s/.env: set POSTGRES_PASSWORD, AUTH0_DOMAIN, AUTH0_AUDIENCE,
+# AUTH0_CLIENT_ID, and AUTH0_REDIRECT_URI
 ```
 
 `k8s/.env` is gitignored. The script generates the `postgres-credentials` and `backend-secrets` Secrets from this file at deploy time, so no credentials are ever committed.
@@ -326,7 +327,7 @@ The backend verifies JWTs via Auth0's JWKS; the frontend uses the Auth0 SPA SDK.
 
 ### Frontend build-time vars
 
-Vite embeds env vars at build time. For the K8s image, pass them as `--build-arg` (the [frontend/Dockerfile](frontend/Dockerfile) declares `VITE_AUTH0_*` ARGs). For local dev, put them in `frontend/.env`.
+Vite embeds env vars at build time. For local dev, put them in `frontend/.env`. For the K8s deploy, [k8s/manage.sh](k8s/manage.sh) reads `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `AUTH0_CLIENT_ID`, and `AUTH0_REDIRECT_URI` from `k8s/.env` and passes them through as `--build-arg VITE_AUTH0_*=...` when building the frontend image — same source of truth for both paths.
 
 ---
 
@@ -409,4 +410,4 @@ Instead, the frontend nginx acts as a reverse proxy for `/api/*`, making the fro
 - **Observability.** OpenTelemetry SDK in the backend, Prometheus + Grafana via Helm, structured-log shipping. Right now we have `kubectl logs` and that's it.
 - **Backups.** WAL archiving for Postgres + a CronJob doing logical dumps to object storage.
 - **CI.** A GitHub Actions pipeline running `lint`, `type-check`, `build`, plus `kind`-in-CI doing a smoke deploy on every PR. The brief excluded CI from scope, but it's the obvious next step.
-- **Frontend Auth0 wiring** — currently the SPA build-time vars (`VITE_AUTH0_*`) need manual `--build-arg` plumbing in the deploy script. A short `frontend/.env.k8s` with a documented build step would be cleaner.
+- **Auth0 callback URLs.** Currently the K8s deploy assumes `http://localhost:8080/` (port-forward target) is added to the Auth0 Application's Allowed Callback URLs. A more polished setup would either auto-detect or document a Helm-style values file per environment.

@@ -81,6 +81,8 @@ load_env() {
   : "${POSTGRES_DB:?POSTGRES_DB not set in $ENV_FILE}"
   : "${AUTH0_DOMAIN:?AUTH0_DOMAIN not set in $ENV_FILE}"
   : "${AUTH0_AUDIENCE:?AUTH0_AUDIENCE not set in $ENV_FILE}"
+  : "${AUTH0_CLIENT_ID:?AUTH0_CLIENT_ID not set in $ENV_FILE}"
+  : "${AUTH0_REDIRECT_URI:?AUTH0_REDIRECT_URI not set in $ENV_FILE}"
 }
 
 # Generates Secrets via `kubectl create secret --dry-run=client | kubectl apply`.
@@ -108,6 +110,8 @@ apply_secrets() {
 }
 
 build_images() {
+  load_env
+
   log "Building $BACKEND_IMAGE"
   docker build -t "$BACKEND_IMAGE" -f "$REPO_ROOT/backend/Dockerfile" "$REPO_ROOT"
 
@@ -115,8 +119,12 @@ build_images() {
   docker build --target builder -t "$BACKEND_MIGRATE_IMAGE" \
     -f "$REPO_ROOT/backend/Dockerfile" "$REPO_ROOT"
 
-  log "Building $FRONTEND_IMAGE"
-  docker build -t "$FRONTEND_IMAGE" -f "$REPO_ROOT/frontend/Dockerfile" "$REPO_ROOT"
+  log "Building $FRONTEND_IMAGE (Vite bakes VITE_AUTH0_* in at build time)"
+  docker build -t "$FRONTEND_IMAGE" -f "$REPO_ROOT/frontend/Dockerfile" "$REPO_ROOT" \
+    --build-arg "VITE_AUTH0_DOMAIN=$AUTH0_DOMAIN" \
+    --build-arg "VITE_AUTH0_AUDIENCE=$AUTH0_AUDIENCE" \
+    --build-arg "VITE_AUTH0_CLIENT_ID=$AUTH0_CLIENT_ID" \
+    --build-arg "VITE_AUTH0_REDIRECT_URI=$AUTH0_REDIRECT_URI"
 }
 
 load_images() {
