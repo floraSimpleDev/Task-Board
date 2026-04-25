@@ -9,6 +9,4 @@ const columnSchema = z.object({
   updatedAt: z.iso.datetime().nullable(),
 })
 
-export type Column = z.infer<typeof columnSchema>
-
 export default columnSchema

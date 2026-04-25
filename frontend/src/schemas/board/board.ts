@@ -8,6 +8,4 @@ const boardSchema = z.object({
   updatedAt: z.iso.datetime().nullable(),
 })
 
-export type Board = z.infer<typeof boardSchema>
-
 export default boardSchema

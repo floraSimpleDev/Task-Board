@@ -1,4 +1,5 @@
 import { type FC, useState } from 'react'
+import type z from 'zod'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -11,9 +12,13 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import useUpdateTask from '@/hooks/useUpdateTask'
-import { TASK_PRIORITIES, type Task, type TaskPriority } from '@/schemas/task/task'
+import type taskSchema from '@/schemas/task'
 
 import DeleteTaskDialog from '../DeleteTaskDialog'
+
+const TASK_PRIORITIES = ['P0', 'P1', 'P2'] as const
+type Task = z.infer<typeof taskSchema>
+type TaskPriority = (typeof TASK_PRIORITIES)[number]
 
 interface Props {
   boardId: string

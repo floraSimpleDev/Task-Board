@@ -1,7 +1,11 @@
-import useSWRMutation, { type SWRMutationResponse } from 'swr/mutation'
+import type { SWRMutationResponse } from 'swr/mutation'
+import type z from 'zod'
 
-import useAuthFetcher from '@/hooks/useAuthFetcher'
-import taskSchema, { type Task, type TaskPriority } from '@/schemas/task/task'
+import useResourceMutation from '@/hooks/useResourceMutation'
+import taskSchema from '@/schemas/task'
+
+type Task = z.infer<typeof taskSchema>
+type TaskPriority = 'P0' | 'P1' | 'P2'
 
 interface UpdateTaskInput {
   taskId: string
@@ -20,20 +24,15 @@ interface Props {
 
 const useUpdateTask = ({
   boardId,
-}: Props): SWRMutationResponse<Task, Error, string, UpdateTaskInput> => {
-  const fetcher = useAuthFetcher(taskSchema)
-  const key = `/boards/${boardId}`
-
-  return useSWRMutation<Task, Error, string, UpdateTaskInput>(
-    key,
-    async (_key, { arg }) =>
-      fetcher(`/tasks/${arg.taskId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(arg.patch),
-      }),
-    { throwOnError: false }
-  )
-}
+}: Props): SWRMutationResponse<Task, Error, string, UpdateTaskInput> =>
+  useResourceMutation<typeof taskSchema, UpdateTaskInput>({
+    swrKey: `/boards/${boardId}`,
+    schema: taskSchema,
+    buildRequest: (input) => ({
+      url: `/tasks/${input.taskId}`,
+      method: 'PATCH',
+      body: input.patch,
+    }),
+  })
 
 export default useUpdateTask
