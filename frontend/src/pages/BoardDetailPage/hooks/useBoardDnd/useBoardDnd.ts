@@ -59,7 +59,12 @@ const useBoardDnd = ({ board, onReorderColumns, onMoveTask }: Props) => {
     }
 
     if (activeDrag.type === 'column') {
-      const nextOrder = computeColumnReorder(board, activeDrag.columnId, String(event.over.id))
+      const overData = parseDragData(event.over)
+      if (!overData) {
+        return
+      }
+      const overColumnId = overData.type === 'column' ? String(event.over.id) : overData.columnId
+      const nextOrder = computeColumnReorder(board, activeDrag.columnId, overColumnId)
       if (nextOrder) {
         onReorderColumns(nextOrder)
       }
