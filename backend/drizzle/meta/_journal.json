@@ -8,6 +8,13 @@
       "when": 1776934611050,
       "tag": "0000_confused_colonel_america",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777129254069,
+      "tag": "0001_right_risque",
+      "breakpoints": true
     }
   ]
 }

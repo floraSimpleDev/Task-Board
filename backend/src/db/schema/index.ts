@@ -1,5 +1,6 @@
 export * from './boardColumns'
 export * from './boards'
 export * from './relations'
+export * from './taskActivities'
 export * from './tasks'
 export * from './users'

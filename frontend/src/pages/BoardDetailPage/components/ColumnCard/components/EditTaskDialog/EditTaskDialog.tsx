@@ -1,4 +1,5 @@
 import { type FC, useState } from 'react'
+import { useSWRConfig } from 'swr'
 import type z from 'zod'
 
 import { Button } from '@/components/ui/button'
@@ -15,6 +16,8 @@ import useUpdateTask from '@/hooks/useUpdateTask'
 import type taskSchema from '@/schemas/task'
 
 import DeleteTaskDialog from '../DeleteTaskDialog'
+
+import TaskActivityList from './components/TaskActivityList'
 
 const TASK_PRIORITIES = ['P0', 'P1', 'P2'] as const
 type Task = z.infer<typeof taskSchema>
@@ -41,6 +44,7 @@ const EditTaskForm: FC<FormProps> = ({ boardId, task, onDone }) => {
     priority: initialPriority,
   } = task
   const { trigger, isMutating, error } = useUpdateTask({ boardId })
+  const { mutate } = useSWRConfig()
 
   const [title, setTitle] = useState(initialTitle)
   const [description, setDescription] = useState(initialDescription ?? '')
@@ -59,7 +63,12 @@ const EditTaskForm: FC<FormProps> = ({ boardId, task, onDone }) => {
           priority,
         },
       },
-      { onSuccess: onDone }
+      {
+        onSuccess: () => {
+          void mutate(`/tasks/${id}/activities`)
+          onDone()
+        },
+      }
     )
   }
 
@@ -133,6 +142,11 @@ const EditTaskForm: FC<FormProps> = ({ boardId, task, onDone }) => {
       </div>
 
       {error && <p className="text-destructive text-xs">{error.message}</p>}
+
+      <div className="space-y-1 border-t pt-3">
+        <span className="text-xs font-medium">Activity</span>
+        <TaskActivityList boardId={boardId} taskId={id} />
+      </div>
 
       <DialogFooter className="items-center">
         <DeleteTaskDialog

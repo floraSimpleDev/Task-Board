@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 
-import type { Database } from '@/db/createDrizzleClient/createDrizzleClient'
+import type { Executor } from '@/db/createDrizzleClient/createDrizzleClient'
 import { tasks } from '@/db/schema/tasks'
 
 type Task = typeof tasks.$inferSelect
@@ -10,8 +10,8 @@ interface CreateTaskInput {
   title: string
 }
 
-const createTask = async (database: Database, input: CreateTaskInput): Promise<Task> => {
-  const [task] = await database
+const createTask = async (executor: Executor, input: CreateTaskInput): Promise<Task> => {
+  const [task] = await executor
     .insert(tasks)
     .values({
       boardColumnId: input.boardColumnId,

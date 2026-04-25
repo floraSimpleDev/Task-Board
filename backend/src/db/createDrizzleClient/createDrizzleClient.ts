@@ -6,6 +6,8 @@ import validateEnv from '@/lib/validateEnv'
 
 export type Database = NodePgDatabase<typeof schema>
 
+export type Executor = Database | Parameters<Parameters<Database['transaction']>[0]>[0]
+
 interface DrizzleClient {
   database: Database
   pool: Pool
