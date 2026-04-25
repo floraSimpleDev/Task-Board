@@ -6,6 +6,28 @@ Build a task board application where authenticated users create, organise, and t
 
 ## Getting started
 
+You could start the project manually or use Makefile
+
+### Start with Makefile (recommended)
+
+The repo ships a [Makefile](Makefile) that wraps every common workflow. Run `make` (no args) to print the full list of targets with descriptions.
+
+```bash
+# 1. one-shot onboarding: installs deps and copies env templates
+make setup
+
+# 2. edit backend/.env and frontend/.env (DATABASE_URL, AUTH0_*, etc.)
+
+# 3. start Postgres + both dev servers (Ctrl-C kills both)
+make dev
+```
+
+`make dev` brings up Postgres via docker-compose and runs the backend (`:3000`) and frontend (`:5173`) dev servers in parallel. The first run won't have a schema yet — run `make migrate` in another terminal, then optionally `make seed` for demo data.
+
+---
+
+### Manual start
+
 ```bash
 # 1. clone
 git clone https://github.com/floraSimpleDev/Task-Board.git
@@ -17,13 +39,13 @@ npm install
 # 3. copy env templates
 cp backend/.env.example backend/.env       # fill in DATABASE_URL + AUTH0_*
 cp frontend/.env.example frontend/.env     # fill in VITE_AUTH0_* if present
+
 ```
 
 `npm install` at the repo root installs both workspaces in one pass — there is no need to `cd backend && npm install` separately.
 
----
 
-## Local development (docker-compose)
+### Local development (docker-compose)
 
 Run Postgres in Docker, run the dev servers on the host. Vite + Fastify hot-reload locally; only the database is containerized for dev.
 
@@ -49,8 +71,12 @@ npm run db:generate -w backend   # generate SQL migration from schema changes
 npm run db:migrate  -w backend   # apply pending migrations
 npm run db:push     -w backend   # push schema directly (dev only — skips migration files)
 npm run db:seed     -w backend   # idempotent demo data; only touches the seed user
-npm run db:studio   -w backend   # Drizzle Studio UI at https://local.drizzle.studio
+
+cd backend
+npm run db:studio                # Drizzle Studio UI at https://local.drizzle.studio
 ```
+
+---
 
 ### API docs (Swagger UI)
 

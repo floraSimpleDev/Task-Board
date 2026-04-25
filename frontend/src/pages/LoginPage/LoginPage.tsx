@@ -4,7 +4,7 @@ import type { FC } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
-const LoginView: FC = () => {
+const LoginPage: FC = () => {
   const { loginWithRedirect } = useAuth0()
 
   const handleLogin = (): void => {
@@ -28,4 +28,4 @@ const LoginView: FC = () => {
   )
 }
 
-export default LoginView
+export default LoginPage
