@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify'
 
 import requirePermission from '@/middlewares/requirePermission'
-import countBoards from '@/repositories/countBoards'
+import countBoards from '@/repositories/boards/countBoards'
 import adminStatsSchema from '@/types/adminStatsSchema'
 
 const adminRoute: FastifyPluginAsync = async (fastify) => {

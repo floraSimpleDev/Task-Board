@@ -1,16 +1,16 @@
 import { type Static } from '@sinclair/typebox'
 import type { FastifyPluginAsync } from 'fastify'
 
-import createTask from '@/repositories/createTask'
-import deleteTask from '@/repositories/deleteTask'
-import getMyColumn from '@/repositories/getMyColumn'
-import getMyTask from '@/repositories/getMyTask'
-import updateTask from '@/repositories/updateTask'
-import columnIdParamsSchema from '@/types/columnIdParamsSchema'
-import createTaskSchema from '@/types/createTaskSchema'
-import taskIdParamsSchema from '@/types/taskIdParamsSchema'
-import taskSchema from '@/types/taskSchema'
-import updateTaskSchema from '@/types/updateTaskSchema'
+import getMyColumn from '@/repositories/columns/getMyColumn'
+import createTask from '@/repositories/tasks/createTask'
+import deleteTask from '@/repositories/tasks/deleteTask'
+import getMyTask from '@/repositories/tasks/getMyTask'
+import updateTask from '@/repositories/tasks/updateTask'
+import columnIdParamsSchema from '@/types/columns/columnIdParamsSchema'
+import createTaskSchema from '@/types/tasks/createTaskSchema'
+import taskIdParamsSchema from '@/types/tasks/taskIdParamsSchema'
+import taskSchema from '@/types/tasks/taskSchema'
+import updateTaskSchema from '@/types/tasks/updateTaskSchema'
 
 type ColumnIdParams = Static<typeof columnIdParamsSchema>
 type TaskIdParams = Static<typeof taskIdParamsSchema>

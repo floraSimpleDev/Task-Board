@@ -1,16 +1,16 @@
 import { type Static } from '@sinclair/typebox'
 import type { FastifyPluginAsync } from 'fastify'
 
-import createColumn from '@/repositories/createColumn'
-import deleteColumn from '@/repositories/deleteColumn'
-import getMyBoard from '@/repositories/getMyBoard'
-import getMyColumn from '@/repositories/getMyColumn'
-import updateColumn from '@/repositories/updateColumn'
-import boardIdParamsSchema from '@/types/boardIdParamsSchema'
-import columnIdParamsSchema from '@/types/columnIdParamsSchema'
-import columnSchema from '@/types/columnSchema'
-import createColumnSchema from '@/types/createColumnSchema'
-import updateColumnSchema from '@/types/updateColumnSchema'
+import getMyBoard from '@/repositories/boards/getMyBoard'
+import createColumn from '@/repositories/columns/createColumn'
+import deleteColumn from '@/repositories/columns/deleteColumn'
+import getMyColumn from '@/repositories/columns/getMyColumn'
+import updateColumn from '@/repositories/columns/updateColumn'
+import boardIdParamsSchema from '@/types/boards/boardIdParamsSchema'
+import columnIdParamsSchema from '@/types/columns/columnIdParamsSchema'
+import columnSchema from '@/types/columns/columnSchema'
+import createColumnSchema from '@/types/columns/createColumnSchema'
+import updateColumnSchema from '@/types/columns/updateColumnSchema'
 
 type BoardIdParams = Static<typeof boardIdParamsSchema>
 type ColumnIdParams = Static<typeof columnIdParamsSchema>

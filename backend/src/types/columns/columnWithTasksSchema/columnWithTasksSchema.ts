@@ -1,14 +1,15 @@
 import { Type } from '@sinclair/typebox'
 
-import columnWithTasksSchema from '@/types/columnWithTasksSchema'
+import taskSchema from '@/types/tasks/taskSchema'
 
-const boardWithColumnsSchema = Type.Object({
+const columnWithTasksSchema = Type.Object({
   id: Type.String({ format: 'uuid' }),
-  userId: Type.String({ format: 'uuid' }),
+  boardId: Type.String({ format: 'uuid' }),
   title: Type.String(),
+  position: Type.Integer(),
   createdAt: Type.String({ format: 'date-time' }),
   updatedAt: Type.Union([Type.String({ format: 'date-time' }), Type.Null()]),
-  columns: Type.Array(columnWithTasksSchema),
+  tasks: Type.Array(taskSchema),
 })
 
-export default boardWithColumnsSchema
+export default columnWithTasksSchema
