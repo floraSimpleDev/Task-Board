@@ -3,10 +3,13 @@ import type { FC } from 'react'
 import { Link } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
+import useFetchMe from '@/hooks/useFetchMe'
 
 const Header: FC = () => {
   const { user, logout } = useAuth0()
+  const { data: me } = useFetchMe()
   const { name, email } = user ?? {}
+  const { userName } = me ?? {}
 
   const handleLogout = (): void => {
     void logout({ logoutParams: { returnTo: window.location.origin } })
@@ -18,7 +21,9 @@ const Header: FC = () => {
         Task Board
       </Link>
       <div className="flex items-center gap-3">
-        <span className="text-muted-foreground text-sm">{name ?? email ?? 'there'}</span>
+        <span className="text-muted-foreground text-sm">
+          {userName ?? name ?? email ?? 'there'}
+        </span>
         <Button variant="outline" onClick={handleLogout}>
           Log out
         </Button>
