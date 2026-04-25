@@ -1,0 +1,60 @@
+# Drizzle migration Job. Runs once per deploy. Image is the builder stage of
+# the backend Dockerfile (has dev deps including drizzle-kit + migrations
+# folder under /app/backend/drizzle). Built via:
+#   docker build --target builder -t task-board-backend-migrate:latest -f backend/Dockerfile .
+#
+# Jobs are immutable, so manage.sh deletes this before re-applying to keep the
+# operation idempotent.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backend-migrate
+  namespace: taskboard
+  labels:
+    app.kubernetes.io/name: backend-migrate
+    app.kubernetes.io/part-of: task-board
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: backend-migrate
+        app.kubernetes.io/part-of: task-board
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - secretRef:
+                name: postgres-credentials
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for postgres to accept connections..."
+              until pg_isready -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do
+                sleep 2
+              done
+              echo "Postgres is ready."
+      containers:
+        - name: migrate
+          image: task-board-backend-migrate:latest
+          imagePullPolicy: IfNotPresent
+          workingDir: /app
+          command: ['npm', 'run', 'db:migrate', '-w', 'backend']
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: DATABASE_URL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi

@@ -1,0 +1,20 @@
+# Headless Service: required by StatefulSet for stable per-pod DNS
+# (postgres-0.postgres.taskboard.svc.cluster.local). Other workloads address
+# Postgres via the regular short name "postgres" — kube-dns resolves it to the
+# pod IP because there is only one replica.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: taskboard
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: task-board
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
