@@ -35,7 +35,12 @@ const buildStatItems = (stats: AdminStats): StatItem[] => [
     value: stats.totalTasks,
     to: '/admin/tasks',
   },
-  { title: 'Activities', description: 'Logged task events', value: stats.totalActivities },
+  {
+    title: 'Activities',
+    description: 'Logged task events',
+    value: stats.totalActivities,
+    to: '/admin/activities',
+  },
 ]
 
 const isForbidden = (error: Error): boolean => error instanceof ApiError && error.status === 403

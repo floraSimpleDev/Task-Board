@@ -7,17 +7,19 @@ import requirePermission from '@/middlewares/requirePermission'
 import countBoards from '@/repositories/boards/countBoards'
 import listAllBoardsWithOwner from '@/repositories/boards/listAllBoardsWithOwner'
 import countTaskActivities from '@/repositories/taskActivities/countTaskActivities'
+import listAllActivitiesWithContext from '@/repositories/taskActivities/listAllActivitiesWithContext'
 import countTasks from '@/repositories/tasks/countTasks'
 import listAllTasksWithContext from '@/repositories/tasks/listAllTasksWithContext'
 import countUsers from '@/repositories/users/countUsers'
 import listAllUsers from '@/repositories/users/listAllUsers'
+import adminActivityListSchema from '@/types/admin/adminActivityListSchema'
 import adminBoardListSchema from '@/types/admin/adminBoardListSchema'
+import adminCursorQuerySchema from '@/types/admin/adminCursorQuerySchema'
 import adminTaskListSchema from '@/types/admin/adminTaskListSchema'
-import adminTasksQuerySchema from '@/types/admin/adminTasksQuerySchema'
 import adminUserListSchema from '@/types/admin/adminUserListSchema'
 import adminStatsSchema from '@/types/adminStatsSchema'
 
-type AdminTasksQuery = Static<typeof adminTasksQuerySchema>
+type AdminCursorQuery = Static<typeof adminCursorQuerySchema>
 
 const REQUIRE_ADMIN = 'read:admin-stats'
 
@@ -65,11 +67,11 @@ const adminRoute: FastifyPluginAsync = async (fastify) => {
     async () => listAllBoardsWithOwner(fastify.database)
   )
 
-  fastify.get<{ Querystring: AdminTasksQuery }>(
+  fastify.get<{ Querystring: AdminCursorQuery }>(
     '/admin/tasks',
     {
       preHandler: [...fastify.authenticate, requirePermission(REQUIRE_ADMIN)],
-      schema: { querystring: adminTasksQuerySchema, response: { 200: adminTaskListSchema } },
+      schema: { querystring: adminCursorQuerySchema, response: { 200: adminTaskListSchema } },
     },
     async (request) => {
       const { cursor: rawCursor, limit = 25 } = request.query
@@ -79,6 +81,42 @@ const adminRoute: FastifyPluginAsync = async (fastify) => {
       }
 
       const rows = await listAllTasksWithContext(fastify.database, {
+        cursor: decodedCursor ?? undefined,
+        limit: limit + 1,
+      })
+
+      const hasMore = rows.length > limit
+      const items = hasMore ? rows.slice(0, limit) : rows
+      const lastItem = items.at(-1)
+      const nextCursor =
+        hasMore && lastItem
+          ? encodeCursor({ createdAt: lastItem.createdAt, id: lastItem.id })
+          : null
+
+      return {
+        items: items.map(({ createdAt, ...rest }) => ({
+          ...rest,
+          createdAt: createdAt.toISOString(),
+        })),
+        nextCursor,
+      }
+    }
+  )
+
+  fastify.get<{ Querystring: AdminCursorQuery }>(
+    '/admin/activities',
+    {
+      preHandler: [...fastify.authenticate, requirePermission(REQUIRE_ADMIN)],
+      schema: { querystring: adminCursorQuerySchema, response: { 200: adminActivityListSchema } },
+    },
+    async (request) => {
+      const { cursor: rawCursor, limit = 25 } = request.query
+      const decodedCursor = rawCursor ? decodeCursor(rawCursor) : undefined
+      if (rawCursor && !decodedCursor) {
+        throw new BadRequestError('Invalid cursor')
+      }
+
+      const rows = await listAllActivitiesWithContext(fastify.database, {
         cursor: decodedCursor ?? undefined,
         limit: limit + 1,
       })
