@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
 import AdminBoardsPage from '@/pages/AdminBoardsPage'
 import AdminStatsPage from '@/pages/AdminStatsPage'
+import AdminTasksPage from '@/pages/AdminTasksPage'
 import AdminUsersPage from '@/pages/AdminUsersPage'
 import AuthenticatedGuard from '@/pages/AuthenticatedGuard'
 import BoardDetailPage from '@/pages/BoardDetailPage'
@@ -20,6 +21,7 @@ const App: FC = () => (
         <Route path="/admin" element={<AdminStatsPage />} />
         <Route path="/admin/users" element={<AdminUsersPage />} />
         <Route path="/admin/boards" element={<AdminBoardsPage />} />
+        <Route path="/admin/tasks" element={<AdminTasksPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

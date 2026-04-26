@@ -1,15 +1,23 @@
+import { type Static } from '@sinclair/typebox'
 import type { FastifyPluginAsync } from 'fastify'
 
+import { decodeCursor, encodeCursor } from '@/lib/cursorPagination'
+import { BadRequestError } from '@/lib/httpErrors'
 import requirePermission from '@/middlewares/requirePermission'
 import countBoards from '@/repositories/boards/countBoards'
 import listAllBoardsWithOwner from '@/repositories/boards/listAllBoardsWithOwner'
 import countTaskActivities from '@/repositories/taskActivities/countTaskActivities'
 import countTasks from '@/repositories/tasks/countTasks'
+import listAllTasksWithContext from '@/repositories/tasks/listAllTasksWithContext'
 import countUsers from '@/repositories/users/countUsers'
 import listAllUsers from '@/repositories/users/listAllUsers'
 import adminBoardListSchema from '@/types/admin/adminBoardListSchema'
+import adminTaskListSchema from '@/types/admin/adminTaskListSchema'
+import adminTasksQuerySchema from '@/types/admin/adminTasksQuerySchema'
 import adminUserListSchema from '@/types/admin/adminUserListSchema'
 import adminStatsSchema from '@/types/adminStatsSchema'
+
+type AdminTasksQuery = Static<typeof adminTasksQuerySchema>
 
 const REQUIRE_ADMIN = 'read:admin-stats'
 
@@ -55,6 +63,42 @@ const adminRoute: FastifyPluginAsync = async (fastify) => {
       schema: { response: { 200: adminBoardListSchema } },
     },
     async () => listAllBoardsWithOwner(fastify.database)
+  )
+
+  fastify.get<{ Querystring: AdminTasksQuery }>(
+    '/admin/tasks',
+    {
+      preHandler: [...fastify.authenticate, requirePermission(REQUIRE_ADMIN)],
+      schema: { querystring: adminTasksQuerySchema, response: { 200: adminTaskListSchema } },
+    },
+    async (request) => {
+      const { cursor: rawCursor, limit = 25 } = request.query
+      const decodedCursor = rawCursor ? decodeCursor(rawCursor) : undefined
+      if (rawCursor && !decodedCursor) {
+        throw new BadRequestError('Invalid cursor')
+      }
+
+      const rows = await listAllTasksWithContext(fastify.database, {
+        cursor: decodedCursor ?? undefined,
+        limit: limit + 1,
+      })
+
+      const hasMore = rows.length > limit
+      const items = hasMore ? rows.slice(0, limit) : rows
+      const lastItem = items.at(-1)
+      const nextCursor =
+        hasMore && lastItem
+          ? encodeCursor({ createdAt: lastItem.createdAt, id: lastItem.id })
+          : null
+
+      return {
+        items: items.map(({ createdAt, ...rest }) => ({
+          ...rest,
+          createdAt: createdAt.toISOString(),
+        })),
+        nextCursor,
+      }
+    }
   )
 }
 
