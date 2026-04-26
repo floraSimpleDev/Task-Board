@@ -2,6 +2,9 @@ import type { FastifyPluginAsync } from 'fastify'
 
 import requirePermission from '@/middlewares/requirePermission'
 import countBoards from '@/repositories/boards/countBoards'
+import countTaskActivities from '@/repositories/taskActivities/countTaskActivities'
+import countTasks from '@/repositories/tasks/countTasks'
+import countUsers from '@/repositories/users/countUsers'
 import adminStatsSchema from '@/types/adminStatsSchema'
 
 const adminRoute: FastifyPluginAsync = async (fastify) => {
@@ -12,8 +15,13 @@ const adminRoute: FastifyPluginAsync = async (fastify) => {
       schema: { response: { 200: adminStatsSchema } },
     },
     async () => {
-      const totalBoards = await countBoards(fastify.database)
-      return { totalBoards }
+      const [totalUsers, totalBoards, totalTasks, totalActivities] = await Promise.all([
+        countUsers(fastify.database),
+        countBoards(fastify.database),
+        countTasks(fastify.database),
+        countTaskActivities(fastify.database),
+      ])
+      return { totalUsers, totalBoards, totalTasks, totalActivities }
     }
   )
 }

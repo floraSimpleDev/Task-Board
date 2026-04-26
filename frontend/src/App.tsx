@@ -1,6 +1,7 @@
 import type { FC } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
+import AdminStatsPage from '@/pages/AdminStatsPage'
 import AuthenticatedGuard from '@/pages/AuthenticatedGuard'
 import BoardDetailPage from '@/pages/BoardDetailPage'
 import BoardsPage from '@/pages/BoardsPage'
@@ -14,6 +15,7 @@ const App: FC = () => (
       <Route element={<AuthenticatedGuard />}>
         <Route path="/boards" element={<BoardsPage />} />
         <Route path="/boards/:id" element={<BoardDetailPage />} />
+        <Route path="/admin" element={<AdminStatsPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

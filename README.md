@@ -360,6 +360,44 @@ Vite embeds env vars at build time. For local dev, put them in `frontend/.env`. 
 
 ---
 
+## Permission-gated admin route
+
+The brief asks for "at least one route with role or permission-based access." This is implemented end-to-end via Auth0 RBAC (permissions claim on the access token).
+
+### Backend
+
+- `GET /admin/stats` returns aggregate stats across all users — see [adminRoute.ts](backend/src/routes/adminRoute/adminRoute.ts).
+- Gated by [requirePermission('read:admin-stats')](backend/src/middlewares/requirePermission/requirePermission.ts), a Fastify `preHandler` that reads the `permissions` array from the verified access-token claims and returns `403 Forbidden` if the required permission is missing.
+- Why permission-based, not role-based: Auth0 RBAC normalizes roles into a flat permissions array on the token. Checking `permissions.includes('read:admin-stats')` is one line and works whether the user got the permission via a role assignment or a direct grant — the API doesn't care which.
+
+### Frontend
+
+- Page lives at `/admin`, rendered inside the same `AuthenticatedGuard` as the rest of the app — see [AdminStatsPage.tsx](frontend/src/pages/AdminStatsPage/AdminStatsPage.tsx).
+- Data hook [useAdminStats](frontend/src/hooks/useAdminStats/useAdminStats.ts) wraps `useSWR` with `shouldRetryOnError: false` so non-admins get a single 403 instead of SWR's default 5-retry storm.
+- Header shows a conditional `Admin` link that renders only if the call succeeds — see [Header.tsx](frontend/src/pages/AuthenticatedGuard/Layout/Header/Header.tsx). SWR dedupes the request by key, so navigating between pages doesn't re-fetch.
+- The page itself distinguishes 403 ("you don't have permission to view admin stats") from generic load failures, so a user who hits `/admin` directly without the permission gets a clear message instead of a blank screen.
+
+### Why the API is the source of truth (not a decoded token in the browser)
+
+The `permissions` claim lives on the **access token**, which the Auth0 React SDK doesn't expose by default. We deliberately don't decode it client-side:
+
+- **No drift.** The backend already validates the token and reads `permissions` — the frontend just calls the endpoint and treats 403 as "hide this." One source of truth, no parallel client-side check that could disagree.
+- **No token parsing in the browser.** Decoding JWTs in the SPA invites bugs (signature verification skipped, alg confusion, etc.). The backend's JWKS-validated check is the only one that matters for security; the frontend's hide-on-403 is a UX optimization, not an authorization decision.
+- **Trade-off:** every authenticated user makes one extra request per session to discover whether they're admin. Acceptable: the response is tiny, SWR caches it, and the alternative (decoded token) is worse on every dimension.
+
+### Auth0 RBAC setup (one-time per tenant)
+
+To actually grant a user `read:admin-stats`:
+
+1. **APIs** → your API → **Settings**: enable both **Enable RBAC** and **Add Permissions in the Access Token**.
+2. **APIs** → your API → **Permissions**: add `read:admin-stats` with any description.
+3. **User Management → Users** → pick the user → **Permissions** tab → **Assign Permissions** → select your API → check `read:admin-stats`.
+4. Log out and back in — Auth0 caches tokens, and the new permission won't appear until a fresh token is issued.
+
+After step 4, the `Admin` link will appear in the header and `/admin` will load the stats card.
+
+---
+
 ## Optional bonus: task activity log
 
 Picked the **task activity log** from the optional list. Each task has a per-task timeline visible in the edit dialog.
