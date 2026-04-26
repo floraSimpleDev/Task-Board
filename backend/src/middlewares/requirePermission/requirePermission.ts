@@ -17,6 +17,7 @@ const requirePermission =
         error: 'Forbidden',
         message: `Missing required permission: ${permission}`,
       })
+      return
     }
   }
 
