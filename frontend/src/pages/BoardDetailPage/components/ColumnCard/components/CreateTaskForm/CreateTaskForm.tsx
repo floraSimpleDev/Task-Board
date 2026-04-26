@@ -39,7 +39,7 @@ const CreateTaskForm: FC<Props> = ({ boardId, columnId }) => {
       <Button
         variant="ghost"
         size="sm"
-        className="w-full justify-start"
+        className="text-primary hover:text-primary w-full justify-start"
         onClick={() => {
           setAdding(true)
         }}

@@ -51,7 +51,7 @@ const BoardDetailPage: FC = () => {
       {error && <p className="text-destructive">Failed to load board: {error.message}</p>}
 
       {board && (
-        <div className="flex gap-4 overflow-x-auto">
+        <div className="flex gap-4 overflow-x-auto p-1">
           <DndContext
             sensors={sensors}
             collisionDetection={boardCollisionDetection}
