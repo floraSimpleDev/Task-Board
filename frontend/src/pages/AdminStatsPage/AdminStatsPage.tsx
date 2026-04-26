@@ -12,11 +12,22 @@ interface StatItem {
   title: string
   description: string
   value: number
+  to?: string
 }
 
 const buildStatItems = (stats: AdminStats): StatItem[] => [
-  { title: 'Users', description: 'Provisioned via Auth0', value: stats.totalUsers },
-  { title: 'Boards', description: 'Across all users', value: stats.totalBoards },
+  {
+    title: 'Users',
+    description: 'Provisioned via Auth0',
+    value: stats.totalUsers,
+    to: '/admin/users',
+  },
+  {
+    title: 'Boards',
+    description: 'Across all users',
+    value: stats.totalBoards,
+    to: '/admin/boards',
+  },
   { title: 'Tasks', description: 'Across all boards', value: stats.totalTasks },
   { title: 'Activities', description: 'Logged task events', value: stats.totalActivities },
 ]
@@ -41,9 +52,9 @@ const AdminStatsPage: FC = () => {
 
       {data && (
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {buildStatItems(data).map(({ title, description, value }) => (
+          {buildStatItems(data).map(({ title, description, value, to }) => (
             <li key={title}>
-              <StatCard title={title} description={description} value={value} />
+              <StatCard title={title} description={description} value={value} to={to} />
             </li>
           ))}
         </ul>
