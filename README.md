@@ -360,22 +360,53 @@ Vite embeds env vars at build time. For local dev, put them in `frontend/.env`. 
 
 ---
 
-## Permission-gated admin route
+## Admin dashboard (permission-gated)
 
-The brief asks for "at least one route with role or permission-based access." This is implemented end-to-end via Auth0 RBAC (permissions claim on the access token).
+The brief asks for "at least one route with role or permission-based access." This grew into a full admin surface — stats overview plus drill-down tables for users, boards, tasks, and activities — all gated by a single Auth0 permission.
 
-### Backend
+### Surface
 
-- `GET /admin/stats` returns aggregate stats across all users — see [adminRoute.ts](backend/src/routes/adminRoute/adminRoute.ts).
-- Gated by [requirePermission('read:admin-stats')](backend/src/middlewares/requirePermission/requirePermission.ts), a Fastify `preHandler` that reads the `permissions` array from the verified access-token claims and returns `403 Forbidden` if the required permission is missing.
-- Why permission-based, not role-based: Auth0 RBAC normalizes roles into a flat permissions array on the token. Checking `permissions.includes('read:admin-stats')` is one line and works whether the user got the permission via a role assignment or a direct grant — the API doesn't care which.
+| Route                 | Page                                                                    | Backend endpoint        | Pagination | Notes                                                                          |
+| --------------------- | ----------------------------------------------------------------------- | ----------------------- | ---------- | ------------------------------------------------------------------------------ |
+| `/admin`              | [AdminStatsPage](frontend/src/pages/AdminStatsPage/AdminStatsPage.tsx)              | `GET /admin/stats`       | n/a        | Four count cards (users, boards, tasks, activities); cards link to drill-downs |
+| `/admin/users`        | [AdminUsersPage](frontend/src/pages/AdminUsersPage/AdminUsersPage.tsx)              | `GET /admin/users`       | none       | Flat list: name, email, joined                                                 |
+| `/admin/boards`       | [AdminBoardsPage](frontend/src/pages/AdminBoardsPage/AdminBoardsPage.tsx)            | `GET /admin/boards`      | none       | Flat list with denormalized owner (name + email)                               |
+| `/admin/tasks`        | [AdminTasksPage](frontend/src/pages/AdminTasksPage/AdminTasksPage.tsx)              | `GET /admin/tasks`       | cursor     | Title, board, owner, priority, created                                         |
+| `/admin/activities`   | [AdminActivitiesPage](frontend/src/pages/AdminActivitiesPage/AdminActivitiesPage.tsx) | `GET /admin/activities`  | cursor     | Action, task + board, actor, summary, when                                     |
 
-### Frontend
+All five endpoints share the same gate: [`requirePermission('read:admin-stats')`](backend/src/middlewares/requirePermission/requirePermission.ts) — a Fastify `preHandler` that reads the `permissions` array from the verified access-token claims and returns `403 Forbidden` if missing.
 
-- Page lives at `/admin`, rendered inside the same `AuthenticatedGuard` as the rest of the app — see [AdminStatsPage.tsx](frontend/src/pages/AdminStatsPage/AdminStatsPage.tsx).
-- Data hook [useAdminStats](frontend/src/hooks/useAdminStats/useAdminStats.ts) wraps `useSWR` with `shouldRetryOnError: false` so non-admins get a single 403 instead of SWR's default 5-retry storm.
-- Header shows a conditional `Admin` link that renders only if the call succeeds — see [Header.tsx](frontend/src/pages/AuthenticatedGuard/Layout/Header/Header.tsx). SWR dedupes the request by key, so navigating between pages doesn't re-fetch.
-- The page itself distinguishes 403 ("you don't have permission to view admin stats") from generic load failures, so a user who hits `/admin` directly without the permission gets a clear message instead of a blank screen.
+### Why permission-based, not role-based
+
+Auth0 RBAC normalizes roles into a flat permissions array on the token. Checking `permissions.includes('read:admin-stats')` is one line and works whether the user got the permission via a role assignment or a direct grant — the API doesn't care which.
+
+### Cursor pagination (tasks + activities)
+
+The two high-cardinality lists (tasks, activities) use **opaque cursor pagination** instead of offset/page numbers:
+
+- **Cursor format:** base64-encoded `{ createdAt, id }`. Generated and validated at the API boundary via [cursorPagination.ts](backend/src/lib/cursorPagination/cursorPagination.ts) using a TypeBox schema for runtime validation.
+- **Stable ordering:** rows are ordered by `(createdAt DESC, id DESC)`. The `id` tie-breaker matters when two rows share a `createdAt` (e.g. a batch insert).
+- **Cursor predicate:** `WHERE (createdAt < c.createdAt) OR (createdAt = c.createdAt AND id < c.id)` — keyset pagination, index-friendly, no `OFFSET` scan.
+- **"Has next" detection:** the route fetches `limit + 1` rows; if the slice is over-full, the last item is dropped from the response and its `(createdAt, id)` becomes the next cursor.
+- **Query params:** `?cursor=<opaque>&limit=<n>` validated by the shared [adminCursorQuerySchema](backend/src/types/admin/adminCursorQuerySchema/adminCursorQuerySchema.ts) (limit 1–100, default 25).
+- **Frontend:** [`useSWRInfinite`](https://swr.vercel.app/docs/pagination) wraps each page; the page exposes `tasks`/`activities`, `hasMore`, `loadMore`, and `isLoadingMore`. A page-level "Load more" button below the table appends results in place — no full-page refetch on next-page.
+- **Why opaque base64 over `?createdAtBefore=&idBefore=`:** the client never constructs cursors; the API alone defines what a cursor *means* and can change the encoding (add fields, switch ordering) without breaking clients. Internally documented as `{ createdAt, id }` for debugging.
+
+### Shared infrastructure
+
+To keep the four list pages consistent and avoid drift:
+
+- **[`DataTable`](frontend/src/pages/components/DataTable/DataTable.tsx)** — wrapper + table + thead shell shared by all four admin lists. Each page passes `headers` and renders its own `<tr>` rows, which keeps cell formatting (multi-line owner, plain priority, relative timestamps) decoupled from the table chrome.
+- **[`renderActivitySummary`](frontend/src/utils/renderActivitySummary/renderActivitySummary.ts)** — formats `created` / `updated` / `moved` activity events into human-readable strings. Shared between the per-task timeline ([TaskActivityList](frontend/src/pages/BoardDetailPage/components/ColumnCard/components/EditTaskDialog/components/TaskActivityList/TaskActivityList.tsx)) and the admin activities table. The column-titles map is optional: per-task view passes one (so `moved` reads "from To Do to In Progress"); admin view omits it (falls back to "moved this task between columns") to avoid fetching every column.
+- **[`formatRelativeTime`](frontend/src/utils/formatRelativeTime/formatRelativeTime.ts)** — `Xm ago` / `Xh ago` / `Xd ago` formatter, also shared between the two surfaces.
+- **[`adminCursorQuerySchema`](backend/src/types/admin/adminCursorQuerySchema/adminCursorQuerySchema.ts)** — single TypeBox query schema reused by `/admin/tasks` and `/admin/activities`.
+
+### Frontend wiring
+
+- All admin pages render inside the same [`AuthenticatedGuard`](frontend/src/pages/AuthenticatedGuard/AuthenticatedGuard.tsx) as the rest of the app — auth gate first, permission gate via 403.
+- Header shows a conditional `Admin` link that renders only if `useAdminStats` succeeds — see [Header.tsx](frontend/src/pages/AuthenticatedGuard/Layout/Header/Header.tsx). SWR dedupes the request by key.
+- Each page distinguishes 403 ("you don't have permission to view X") from generic load failures via `error instanceof ApiError && error.status === 403`, so non-admins hitting a deep link get a clear message instead of a blank screen.
+- `useAdminStats`, `useAdminUsers`, `useAdminBoards` use `useSWR` with `shouldRetryOnError: false` (single 403, not SWR's default 5-retry storm). `useAdminTasks` and `useAdminActivities` use `useSWRInfinite` with the same option.
 
 ### Why the API is the source of truth (not a decoded token in the browser)
 
@@ -394,7 +425,7 @@ To actually grant a user `read:admin-stats`:
 3. **User Management → Users** → pick the user → **Permissions** tab → **Assign Permissions** → select your API → check `read:admin-stats`.
 4. Log out and back in — Auth0 caches tokens, and the new permission won't appear until a fresh token is issued.
 
-After step 4, the `Admin` link will appear in the header and `/admin` will load the stats card.
+After step 4, the `Admin` link will appear in the header and `/admin` will load the stats card with drill-down links.
 
 ---
 
@@ -426,8 +457,9 @@ When a user is deleted (cascading away their boards / columns / tasks), the task
 
 ### Surface
 
-- `GET /tasks/:id/activities` — gated by the same ownership check as the rest of the task routes; joins `users` for the actor's display name.
-- Frontend timeline lives inside [EditTaskDialog](frontend/src/pages/BoardDetailPage/components/ColumnCard/components/EditTaskDialog/) — fetched lazily when the dialog opens, revalidated on save.
+- `GET /tasks/:id/activities` — per-task timeline; gated by the same ownership check as the rest of the task routes; joins `users` for the actor's display name.
+- `GET /admin/activities` — cross-task feed for admins (cursor-paginated, gated by `read:admin-stats`); same data joined further to surface task title + board context. See [Admin dashboard](#admin-dashboard-permission-gated).
+- Frontend per-task timeline lives inside [EditTaskDialog](frontend/src/pages/BoardDetailPage/components/ColumnCard/components/EditTaskDialog/), fetched lazily when the dialog opens. Frontend admin feed lives at [/admin/activities](frontend/src/pages/AdminActivitiesPage/AdminActivitiesPage.tsx) — both consume the shared [renderActivitySummary](frontend/src/utils/renderActivitySummary/renderActivitySummary.ts) helper.
 
 ---
 
@@ -544,6 +576,8 @@ Instead, the frontend nginx acts as a reverse proxy for `/api/*`, making the fro
 
 ## What I'd improve given more time
 
+### Infra & deployment
+
 - **Split health endpoints.** Backend `/health/ready` should check the DB connection so the readiness probe drains pods that have lost their DB connection. Liveness should stay process-only.
 - **Ingress over NodePort.** Add `ingress-nginx` install to `manage.sh deploy` (or document a pre-step), expose the app at a single hostname with TLS via cert-manager.
 - **External secrets.** Replace the `kubectl create secret` shell pattern with SealedSecrets or the External Secrets Operator backed by Vault / Doppler / 1Password.
@@ -552,3 +586,16 @@ Instead, the frontend nginx acts as a reverse proxy for `/api/*`, making the fro
 - **Backups.** WAL archiving for Postgres + a CronJob doing logical dumps to object storage.
 - **CI.** A GitHub Actions pipeline running `lint`, `type-check`, `build`, plus `kind`-in-CI doing a smoke deploy on every PR. The brief excluded CI from scope, but it's the obvious next step.
 - **Auth0 callback URLs.** Currently the K8s deploy assumes `http://localhost:8080/` (port-forward target) is added to the Auth0 Application's Allowed Callback URLs. A more polished setup would either auto-detect or document a Helm-style values file per environment.
+
+### Admin surface
+
+The admin dashboard is intentionally read-only, single-permission, no filters. Concrete next steps when needs grow:
+
+- **Paginate users and boards.** Currently unpaginated — fine while volume is small (Auth0-provisioned users grow slowly, boards scale with users). Infrastructure is already in place: when boards cross ~500 rows or page render exceeds ~200ms, retrofit by adding a cursor variant of the repository, swapping the route to `Querystring: AdminCursorQuery`, and replacing `useSWR` with `useSWRInfinite` plus a "Load more" button. ~30 minutes per table.
+- **Search and filter UI.** Action-type filter on activities (created / updated / moved), priority filter on tasks, owner filter on boards/tasks, date-range filter across all lists. Backend would extend `adminCursorQuerySchema` with optional filter fields; cursor stays opaque so it implicitly carries the active filter set.
+- **Granular admin permissions.** Currently a single `read:admin-stats` gates everything. Real product would split: `read:admin-users`, `read:admin-activities`, etc., and keep `read:admin-stats` only for the overview cards. The `requirePermission` middleware already supports this — just thread the right string per route.
+- **Admin mutations.** Deactivate user, force-delete board, redact activity row. Each would need a new permission (`write:admin-*`) plus an audit log of admin actions themselves (admin who did it, timestamp, target, reason). Currently the surface is read-only by design — adding writes is non-trivial because cascade rules mean "delete board" is destructive.
+- **CSV export.** Stream a paginated query into a CSV response for offline analysis. Trivial extension to the existing repos; would benefit from a `?format=csv` query param sharing the cursor schema.
+- **Richer cell rendering.** Priority as coloured badges instead of `P0`/`P1`/`P2` text. Status indicators for users (last active). For `moved` activities in the admin view, fetch column titles on demand (per-board or via a cached endpoint) so the summary reads "from To Do to In Progress" instead of the generic fallback.
+- **Rate limiting on admin endpoints.** A misbehaving admin client (or a compromised token) could fetch all activities by paginating end-to-end. A token-bucket limiter at the Fastify hook level would cap throughput without breaking legitimate use.
+- **Server-side aggregation views.** "Top 10 most active users this week," "boards with no recent activity" — these are aggregate questions, not filtered list views. They want their own purpose-built endpoints + dashboard widgets, not generic table filters.

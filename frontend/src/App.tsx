@@ -1,6 +1,7 @@
 import type { FC } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
+import AdminActivitiesPage from '@/pages/AdminActivitiesPage'
 import AdminBoardsPage from '@/pages/AdminBoardsPage'
 import AdminStatsPage from '@/pages/AdminStatsPage'
 import AdminTasksPage from '@/pages/AdminTasksPage'
@@ -22,6 +23,7 @@ const App: FC = () => (
         <Route path="/admin/users" element={<AdminUsersPage />} />
         <Route path="/admin/boards" element={<AdminBoardsPage />} />
         <Route path="/admin/tasks" element={<AdminTasksPage />} />
+        <Route path="/admin/activities" element={<AdminActivitiesPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
