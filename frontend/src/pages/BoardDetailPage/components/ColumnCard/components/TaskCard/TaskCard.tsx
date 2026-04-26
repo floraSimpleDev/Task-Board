@@ -18,11 +18,11 @@ interface Props {
 const PRIORITY_CLASSES: Record<TaskPriority, string> = {
   P0: 'bg-destructive/10 text-destructive',
   P1: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  P2: 'bg-muted text-muted-foreground',
+  P2: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
 }
 
 const TaskCard: FC<Props> = ({ boardId, task }) => {
-  const { title, description, priority } = task
+  const { title, priority } = task
   const [editing, setEditing] = useState(false)
 
   return (
@@ -48,9 +48,6 @@ const TaskCard: FC<Props> = ({ boardId, task }) => {
               </span>
             )}
           </div>
-          {description && (
-            <p className="text-muted-foreground line-clamp-2 text-xs">{description}</p>
-          )}
         </CardContent>
       </Card>
       <EditTaskDialog boardId={boardId} task={task} open={editing} onOpenChange={setEditing} />
