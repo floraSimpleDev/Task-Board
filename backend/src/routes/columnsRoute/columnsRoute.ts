@@ -1,6 +1,7 @@
 import { type Static } from '@sinclair/typebox'
 import type { FastifyPluginAsync } from 'fastify'
 
+import { NotFoundError } from '@/lib/httpErrors'
 import getMyBoard from '@/repositories/boards/getMyBoard'
 import createColumn from '@/repositories/columns/createColumn'
 import deleteColumn from '@/repositories/columns/deleteColumn'
@@ -31,8 +32,7 @@ const columnsRoute: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const board = await getMyBoard(fastify.database, request.params.id, request.dbUser.id)
       if (!board) {
-        void reply.code(404).send({ error: 'Not Found', message: 'Board not found' })
-        return
+        throw new NotFoundError('Board not found')
       }
 
       const column = await createColumn(fastify.database, {
@@ -53,17 +53,15 @@ const columnsRoute: FastifyPluginAsync = async (fastify) => {
         response: { 200: columnSchema },
       },
     },
-    async (request, reply) => {
+    async (request) => {
       const owned = await getMyColumn(fastify.database, request.params.id, request.dbUser.id)
       if (!owned) {
-        void reply.code(404).send({ error: 'Not Found', message: 'Column not found' })
-        return
+        throw new NotFoundError('Column not found')
       }
 
       const column = await updateColumn(fastify.database, request.params.id, request.body)
       if (!column) {
-        void reply.code(404).send({ error: 'Not Found', message: 'Column not found' })
-        return
+        throw new NotFoundError('Column not found')
       }
       return column
     }
@@ -78,8 +76,7 @@ const columnsRoute: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const owned = await getMyColumn(fastify.database, request.params.id, request.dbUser.id)
       if (!owned) {
-        void reply.code(404).send({ error: 'Not Found', message: 'Column not found' })
-        return
+        throw new NotFoundError('Column not found')
       }
 
       await deleteColumn(fastify.database, request.params.id)
