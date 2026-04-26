@@ -2,6 +2,7 @@ import type { FC } from 'react'
 
 import Breadcrumb from '@/components/Breadcrumb'
 import useAdminUsers from '@/hooks/useAdminUsers'
+import DataTable from '@/pages/components/DataTable'
 import ApiError from '@/utils/ApiError'
 
 const isForbidden = (error: Error): boolean => error instanceof ApiError && error.status === 403
@@ -27,28 +28,17 @@ const AdminUsersPage: FC = () => {
         (usersList.length === 0 ? (
           <p className="text-muted-foreground">No users yet.</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-left">
-                <tr>
-                  <th className="px-4 py-2 font-medium">Name</th>
-                  <th className="px-4 py-2 font-medium">Email</th>
-                  <th className="px-4 py-2 font-medium">Joined</th>
-                </tr>
-              </thead>
-              <tbody>
-                {usersList.map(({ id, userName, email, createdAt }) => (
-                  <tr key={id} className="border-t">
-                    <td className="px-4 py-2 font-medium">{userName}</td>
-                    <td className="text-muted-foreground px-4 py-2">{email}</td>
-                    <td className="text-muted-foreground px-4 py-2">
-                      {new Date(createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable headers={['Name', 'Email', 'Joined']}>
+            {usersList.map(({ id, userName, email, createdAt }) => (
+              <tr key={id} className="border-t">
+                <td className="px-4 py-2 font-medium">{userName}</td>
+                <td className="text-muted-foreground px-4 py-2">{email}</td>
+                <td className="text-muted-foreground px-4 py-2">
+                  {new Date(createdAt).toLocaleDateString()}
+                </td>
+              </tr>
+            ))}
+          </DataTable>
         ))}
     </>
   )

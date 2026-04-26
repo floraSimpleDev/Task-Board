@@ -29,7 +29,12 @@ const buildStatItems = (stats: AdminStats): StatItem[] => [
     value: stats.totalBoards,
     to: '/admin/boards',
   },
-  { title: 'Tasks', description: 'Across all boards', value: stats.totalTasks },
+  {
+    title: 'Tasks',
+    description: 'Across all boards',
+    value: stats.totalTasks,
+    to: '/admin/tasks',
+  },
   { title: 'Activities', description: 'Logged task events', value: stats.totalActivities },
 ]
 
@@ -40,7 +45,7 @@ const AdminStatsPage: FC = () => {
 
   return (
     <>
-      <h2 className="mb-6 text-2xl font-bold">Admin stats</h2>
+      <h2 className="mb-6 text-2xl font-bold">Admin status</h2>
 
       {isLoading && <p className="text-muted-foreground">Loading…</p>}
 

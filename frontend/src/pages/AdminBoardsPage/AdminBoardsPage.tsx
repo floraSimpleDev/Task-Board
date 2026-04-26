@@ -2,6 +2,7 @@ import type { FC } from 'react'
 
 import Breadcrumb from '@/components/Breadcrumb'
 import useAdminBoards from '@/hooks/useAdminBoards'
+import DataTable from '@/pages/components/DataTable'
 import ApiError from '@/utils/ApiError'
 
 const isForbidden = (error: Error): boolean => error instanceof ApiError && error.status === 403
@@ -27,31 +28,20 @@ const AdminBoardsPage: FC = () => {
         (boardsList.length === 0 ? (
           <p className="text-muted-foreground">No boards yet.</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-left">
-                <tr>
-                  <th className="px-4 py-2 font-medium">Title</th>
-                  <th className="px-4 py-2 font-medium">Owner</th>
-                  <th className="px-4 py-2 font-medium">Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {boardsList.map(({ id, title, ownerUserName, ownerEmail, createdAt }) => (
-                  <tr key={id} className="border-t">
-                    <td className="px-4 py-2 font-medium">{title}</td>
-                    <td className="px-4 py-2">
-                      <div>{ownerUserName}</div>
-                      <div className="text-muted-foreground text-xs">{ownerEmail}</div>
-                    </td>
-                    <td className="text-muted-foreground px-4 py-2">
-                      {new Date(createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable headers={['Title', 'Owner', 'Created']}>
+            {boardsList.map(({ id, title, ownerUserName, ownerEmail, createdAt }) => (
+              <tr key={id} className="border-t">
+                <td className="px-4 py-2 font-medium">{title}</td>
+                <td className="px-4 py-2">
+                  <div>{ownerUserName}</div>
+                  <div className="text-muted-foreground text-xs">{ownerEmail}</div>
+                </td>
+                <td className="text-muted-foreground px-4 py-2">
+                  {new Date(createdAt).toLocaleDateString()}
+                </td>
+              </tr>
+            ))}
+          </DataTable>
         ))}
     </>
   )
