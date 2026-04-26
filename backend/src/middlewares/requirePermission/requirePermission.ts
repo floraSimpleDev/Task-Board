@@ -12,11 +12,13 @@ interface AccessTokenClaims {
 
 const requirePermission =
   (permission: string): preHandlerHookHandler =>
-  (request) => {
+  (request, _reply, done) => {
     const { permissions = [] } = request.user as AccessTokenClaims
     if (!permissions.includes(permission)) {
-      throw new ForbiddenError(`Missing required permission: ${permission}`)
+      done(new ForbiddenError(`Missing required permission: ${permission}`))
+      return
     }
+    done()
   }
 
 export default requirePermission

@@ -431,6 +431,47 @@ When a user is deleted (cascading away their boards / columns / tasks), the task
 
 ---
 
+## Error handling across the stack
+
+A single contract: every failure produces a `{ error, message }` body with a meaningful HTTP status, and the frontend reads both as typed data — no string parsing.
+
+### Backend: typed errors → central handler
+
+- **[`HttpError` hierarchy](backend/src/lib/httpErrors/httpErrors.ts)** — base class plus `BadRequestError`, `UnauthorizedError`, `ForbiddenError`, `NotFoundError`, `ConflictError`. Each sets `statusCode` so any error caught by Fastify's error hook can be mapped uniformly.
+- **Routes throw, never `reply.code(N).send(...)`** — the route layer expresses intent (`throw new NotFoundError('Task not found')`) and the handler does the HTTP work. `requirePermission` middleware does the same with `ForbiddenError`.
+- **[`resolveErrorStatus`](backend/src/lib/resolveErrorStatus/resolveErrorStatus.ts)** — pure function decoupled from the Fastify hook. Returns `{ statusCode, trustMessage }` based on three checks, in order:
+  1. Does the error carry an explicit `statusCode`? (our typed errors + Fastify validation errors) → use it, message is safe to surface.
+  2. Is it a Postgres error? → look up `code` in the table below, message is **not** safe (raw constraint detail leaks internals).
+  3. Otherwise → 500, message is not safe.
+- **[Central handler](backend/src/plugins/errorHandler/errorHandler.ts)** — logs at warn (4xx) or error (5xx), then renders `{ error: <statusName>, message: <safe message> }`. The `trustMessage` flag controls whether the client sees `error.message` or a sanitised `STATUS_CODES[statusCode]` fallback.
+
+#### Postgres error → HTTP status mapping
+
+| PG code | Meaning                       | HTTP |
+| ------- | ----------------------------- | ---- |
+| `23505` | unique_violation              | 409  |
+| `23503` | foreign_key_violation         | 409  |
+| `23502` | not_null_violation            | 400  |
+| `23514` | check_violation               | 400  |
+| `22P02` | invalid_text_representation   | 400  |
+
+Adding a new code is one line in `PG_CODE_TO_STATUS`.
+
+### Frontend: typed transport → typed consumers
+
+- **[`ApiError`](frontend/src/utils/ApiError/ApiError.ts)** — extends `Error`, carries `status`, `statusText` (the backend's `error` field), and `message`.
+- **[`createBaseFetcher`](frontend/src/utils/createBaseFetcher/createBaseFetcher.ts)** — on non-OK response, parses the JSON body and throws `ApiError(status, body.error, body.message)`. Falls back to `response.statusText` if the body isn't JSON.
+- **Consumers** — anywhere we display `error.message` automatically renders the backend's user-friendly text (e.g. *"Task not found"*, *"Missing required permission: read:admin-stats"*). Pages that branch on status do `error instanceof ApiError && error.status === 403` — typed and correct, no string parsing.
+
+### Why this matters
+
+- **One source of truth per concern.** Status decisions live in one Fastify hook, not scattered across routes. PG → HTTP mapping lives in one table. Client-side error semantics live in one class.
+- **Information leak is opt-in, not accidental.** A typed error declares its message safe; everything else gets a sanitised status name. The full error still hits the server log via Pino.
+- **No fabricated strings.** The previous frontend threw `new Error("403 Forbidden")` and pages parsed that with `startsWith('403')`. That's gone — `error.status === 403` works against typed data.
+- **PG concurrency edge cases stop being 500s.** A unique-constraint race on `board_columns_board_id_position_key` now surfaces as `409 Conflict` instead of an opaque server error.
+
+---
+
 ## Architecture decisions
 
 ### Frontend nginx proxies `/api/*` to the backend Service

@@ -40,23 +40,18 @@ const BoardDetailPage: FC = () => {
       : undefined
 
   return (
-    <div>
-      <div className="border-b p-4">
-        <Breadcrumb
-          navigations={[
-            { label: 'Boards', to: '/boards' },
-            { label: board?.title ?? 'Loading...' },
-          ]}
-        />
-        <h1 className="mt-1 text-2xl font-bold">{board?.title ?? 'Loading...'}</h1>
-      </div>
+    <>
+      <Breadcrumb
+        navigations={[{ label: 'Boards', to: '/boards' }, { label: board?.title ?? 'Loading...' }]}
+      />
+      <h1 className="mt-2 mb-6 text-2xl font-bold">{board?.title ?? 'Loading...'}</h1>
 
-      <main className="flex gap-4 overflow-x-auto p-6">
-        {isLoading && <p className="text-muted-foreground">Loading board…</p>}
+      {isLoading && <p className="text-muted-foreground">Loading board…</p>}
 
-        {error && <p className="text-destructive">Failed to load board: {error.message}</p>}
+      {error && <p className="text-destructive">Failed to load board: {error.message}</p>}
 
-        {board && (
+      {board && (
+        <div className="flex gap-4 overflow-x-auto">
           <DndContext
             sensors={sensors}
             collisionDetection={boardCollisionDetection}
@@ -85,9 +80,9 @@ const BoardDetailPage: FC = () => {
               {draggedColumn && <ColumnCard boardId={board.id} column={draggedColumn} />}
             </DragOverlay>
           </DndContext>
-        )}
-      </main>
-    </div>
+        </div>
+      )}
+    </>
   )
 }
 

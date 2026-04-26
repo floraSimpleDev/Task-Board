@@ -2,14 +2,15 @@ import type { FC } from 'react'
 
 import Breadcrumb from '@/components/Breadcrumb'
 import useAdminBoards from '@/hooks/useAdminBoards'
+import ApiError from '@/utils/ApiError'
 
-const isForbidden = (error: Error): boolean => error.message.startsWith('403')
+const isForbidden = (error: Error): boolean => error instanceof ApiError && error.status === 403
 
 const AdminBoardsPage: FC = () => {
   const { data: boardsList, error, isLoading } = useAdminBoards()
 
   return (
-    <main className="mx-auto max-w-5xl p-6">
+    <>
       <Breadcrumb navigations={[{ label: 'Admin', to: '/admin' }, { label: 'All boards' }]} />
       <h2 className="mt-2 mb-6 text-2xl font-bold">All boards</h2>
 
@@ -52,7 +53,7 @@ const AdminBoardsPage: FC = () => {
             </table>
           </div>
         ))}
-    </main>
+    </>
   )
 }
 
