@@ -1,7 +1,6 @@
 import type { FC } from 'react'
-import { Link } from 'react-router-dom'
 
-import { Button } from '@/components/ui/button'
+import Breadcrumb from '@/components/Breadcrumb'
 import useAdminUsers from '@/hooks/useAdminUsers'
 
 const isForbidden = (error: Error): boolean => error.message.startsWith('403')
@@ -11,12 +10,8 @@ const AdminUsersPage: FC = () => {
 
   return (
     <main className="mx-auto max-w-5xl p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-bold">All users</h2>
-        <Button variant="outline" asChild>
-          <Link to="/admin">← Back to stats</Link>
-        </Button>
-      </div>
+      <Breadcrumb navigations={[{ label: 'Admin', to: '/admin' }, { label: 'Users' }]} />
+      <h2 className="mt-2 mb-6 text-2xl font-bold">All users</h2>
 
       {isLoading && <p className="text-muted-foreground">Loading…</p>}
 

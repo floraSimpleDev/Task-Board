@@ -1,8 +1,9 @@
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable'
 import type { FC } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Navigate, useParams } from 'react-router-dom'
 
+import Breadcrumb from '@/components/Breadcrumb'
 import useBoard from '@/hooks/useBoard'
 import useMoveTask from '@/hooks/useMoveTask'
 import useReorderColumns from '@/hooks/useReorderColumns'
@@ -41,9 +42,12 @@ const BoardDetailPage: FC = () => {
   return (
     <div>
       <div className="border-b p-4">
-        <Link to="/boards" className="text-muted-foreground hover:text-foreground text-sm">
-          ← All boards
-        </Link>
+        <Breadcrumb
+          navigations={[
+            { label: 'Boards', to: '/boards' },
+            { label: board?.title ?? 'Loading...' },
+          ]}
+        />
         <h1 className="mt-1 text-2xl font-bold">{board?.title ?? 'Loading...'}</h1>
       </div>
 
