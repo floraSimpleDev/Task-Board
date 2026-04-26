@@ -1,6 +1,7 @@
 import { type Static } from '@sinclair/typebox'
 import type { FastifyPluginAsync } from 'fastify'
 
+import { BadRequestError, NotFoundError } from '@/lib/httpErrors'
 import createBoard from '@/repositories/boards/createBoard'
 import deleteBoard from '@/repositories/boards/deleteBoard'
 import getMyBoard from '@/repositories/boards/getMyBoard'
@@ -37,15 +38,14 @@ const boardsRoute: FastifyPluginAsync = async (fastify) => {
       preHandler: fastify.authenticate,
       schema: { params: boardIdParamsSchema, response: { 200: boardWithColumnsSchema } },
     },
-    async (request, reply) => {
+    async (request) => {
       const board = await getMyBoardWithColumns(
         fastify.database,
         request.params.id,
         request.dbUser.id
       )
       if (!board) {
-        void reply.code(404).send({ error: 'Not Found', message: 'Board not found' })
-        return
+        throw new NotFoundError('Board not found')
       }
       return board
     }
@@ -78,16 +78,12 @@ const boardsRoute: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const board = await getMyBoard(fastify.database, request.params.id, request.dbUser.id)
       if (!board) {
-        void reply.code(404).send({ error: 'Not Found', message: 'Board not found' })
-        return
+        throw new NotFoundError('Board not found')
       }
 
       const reordered = await reorderColumns(fastify.database, board.id, request.body.columnIds)
       if (!reordered) {
-        void reply
-          .code(400)
-          .send({ error: 'Bad Request', message: 'columnIds do not match this board' })
-        return
+        throw new BadRequestError('columnIds do not match this board')
       }
       void reply.code(204).send()
     }
@@ -103,13 +99,12 @@ const boardsRoute: FastifyPluginAsync = async (fastify) => {
         response: { 200: boardSchema },
       },
     },
-    async (request, reply) => {
+    async (request) => {
       const board = await updateBoard(fastify.database, request.params.id, request.dbUser.id, {
         title: request.body.title,
       })
       if (!board) {
-        void reply.code(404).send({ error: 'Not Found', message: 'Board not found' })
-        return
+        throw new NotFoundError('Board not found')
       }
       return board
     }
@@ -124,8 +119,7 @@ const boardsRoute: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const deleted = await deleteBoard(fastify.database, request.params.id, request.dbUser.id)
       if (!deleted) {
-        void reply.code(404).send({ error: 'Not Found', message: 'Board not found' })
-        return
+        throw new NotFoundError('Board not found')
       }
       void reply.code(204).send()
     }

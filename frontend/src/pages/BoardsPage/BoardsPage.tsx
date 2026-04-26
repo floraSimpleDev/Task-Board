@@ -11,7 +11,7 @@ const BoardsPage: FC = () => {
   const { data: boards, error, isLoading } = useBoards()
 
   return (
-    <main className="mx-auto max-w-5xl p-6">
+    <>
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold">Your boards</h2>
         <CreateBoardDialog />
@@ -44,7 +44,7 @@ const BoardsPage: FC = () => {
       ) : (
         <p className="text-muted-foreground">No boards yet. Create one to get started.</p>
       )}
-    </main>
+    </>
   )
 }
 

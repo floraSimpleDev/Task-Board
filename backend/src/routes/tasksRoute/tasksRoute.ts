@@ -1,6 +1,7 @@
 import { type Static } from '@sinclair/typebox'
 import type { FastifyPluginAsync } from 'fastify'
 
+import { NotFoundError } from '@/lib/httpErrors'
 import getMyColumn from '@/repositories/columns/getMyColumn'
 import createTaskActivity from '@/repositories/taskActivities/createTaskActivity'
 import listTaskActivities from '@/repositories/taskActivities/listTaskActivities'
@@ -66,8 +67,7 @@ const tasksRoute: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const column = await getMyColumn(fastify.database, request.params.id, request.dbUser.id)
       if (!column) {
-        void reply.code(404).send({ error: 'Not Found', message: 'Column not found' })
-        return
+        throw new NotFoundError('Column not found')
       }
 
       const task = await fastify.database.transaction(async (transaction) => {
@@ -98,11 +98,10 @@ const tasksRoute: FastifyPluginAsync = async (fastify) => {
         response: { 200: taskSchema },
       },
     },
-    async (request, reply) => {
+    async (request) => {
       const owned = await getMyTask(fastify.database, request.params.id, request.dbUser.id)
       if (!owned) {
-        void reply.code(404).send({ error: 'Not Found', message: 'Task not found' })
-        return
+        throw new NotFoundError('Task not found')
       }
 
       if (request.body.boardColumnId) {
@@ -112,8 +111,7 @@ const tasksRoute: FastifyPluginAsync = async (fastify) => {
           request.dbUser.id
         )
         if (!targetColumn) {
-          void reply.code(404).send({ error: 'Not Found', message: 'Target column not found' })
-          return
+          throw new NotFoundError('Target column not found')
         }
       }
 
@@ -150,8 +148,7 @@ const tasksRoute: FastifyPluginAsync = async (fastify) => {
       })
 
       if (!task) {
-        void reply.code(404).send({ error: 'Not Found', message: 'Task not found' })
-        return
+        throw new NotFoundError('Task not found')
       }
       return task
     }
@@ -166,8 +163,7 @@ const tasksRoute: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const owned = await getMyTask(fastify.database, request.params.id, request.dbUser.id)
       if (!owned) {
-        void reply.code(404).send({ error: 'Not Found', message: 'Task not found' })
-        return
+        throw new NotFoundError('Task not found')
       }
 
       await deleteTask(fastify.database, request.params.id)
@@ -184,11 +180,10 @@ const tasksRoute: FastifyPluginAsync = async (fastify) => {
         response: { 200: taskActivityListSchema },
       },
     },
-    async (request, reply) => {
+    async (request) => {
       const owned = await getMyTask(fastify.database, request.params.id, request.dbUser.id)
       if (!owned) {
-        void reply.code(404).send({ error: 'Not Found', message: 'Task not found' })
-        return
+        throw new NotFoundError('Task not found')
       }
 
       const activities = await listTaskActivities(fastify.database, request.params.id)

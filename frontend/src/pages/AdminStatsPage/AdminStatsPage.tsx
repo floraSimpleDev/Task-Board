@@ -3,6 +3,7 @@ import type z from 'zod'
 
 import useAdminStats from '@/hooks/useAdminStats'
 import type adminStatsSchema from '@/schemas/adminStats'
+import ApiError from '@/utils/ApiError'
 
 import StatCard from './components/StatCard'
 
@@ -32,13 +33,13 @@ const buildStatItems = (stats: AdminStats): StatItem[] => [
   { title: 'Activities', description: 'Logged task events', value: stats.totalActivities },
 ]
 
-const isForbidden = (error: Error): boolean => error.message.startsWith('403')
+const isForbidden = (error: Error): boolean => error instanceof ApiError && error.status === 403
 
 const AdminStatsPage: FC = () => {
   const { data, error, isLoading } = useAdminStats()
 
   return (
-    <main className="mx-auto max-w-5xl p-6">
+    <>
       <h2 className="mb-6 text-2xl font-bold">Admin stats</h2>
 
       {isLoading && <p className="text-muted-foreground">Loading…</p>}
@@ -59,7 +60,7 @@ const AdminStatsPage: FC = () => {
           ))}
         </ul>
       )}
-    </main>
+    </>
   )
 }
 
