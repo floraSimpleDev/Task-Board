@@ -1,7 +1,7 @@
 import { type Static } from '@sinclair/typebox'
 import type { FastifyPluginAsync } from 'fastify'
 
-import { decodeCursor, encodeCursor } from '@/lib/cursorPagination'
+import { buildPaginatedResult, decodeCursor } from '@/lib/cursorPagination'
 import { BadRequestError } from '@/lib/httpErrors'
 import requirePermission from '@/middlewares/requirePermission'
 import countBoards from '@/repositories/boards/countBoards'
@@ -85,21 +85,7 @@ const adminRoute: FastifyPluginAsync = async (fastify) => {
         limit: limit + 1,
       })
 
-      const hasMore = rows.length > limit
-      const items = hasMore ? rows.slice(0, limit) : rows
-      const lastItem = items.at(-1)
-      const nextCursor =
-        hasMore && lastItem
-          ? encodeCursor({ createdAt: lastItem.createdAt, id: lastItem.id })
-          : null
-
-      return {
-        items: items.map(({ createdAt, ...rest }) => ({
-          ...rest,
-          createdAt: createdAt.toISOString(),
-        })),
-        nextCursor,
-      }
+      return buildPaginatedResult(rows, limit)
     }
   )
 
@@ -121,21 +107,7 @@ const adminRoute: FastifyPluginAsync = async (fastify) => {
         limit: limit + 1,
       })
 
-      const hasMore = rows.length > limit
-      const items = hasMore ? rows.slice(0, limit) : rows
-      const lastItem = items.at(-1)
-      const nextCursor =
-        hasMore && lastItem
-          ? encodeCursor({ createdAt: lastItem.createdAt, id: lastItem.id })
-          : null
-
-      return {
-        items: items.map(({ createdAt, ...rest }) => ({
-          ...rest,
-          createdAt: createdAt.toISOString(),
-        })),
-        nextCursor,
-      }
+      return buildPaginatedResult(rows, limit)
     }
   )
 }

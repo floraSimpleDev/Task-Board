@@ -1,8 +1,8 @@
 import type { FC } from 'react'
 
-import Breadcrumb from '@/components/Breadcrumb'
 import { Button } from '@/components/ui/button'
 import useAdminActivities from '@/hooks/useAdminActivities'
+import Breadcrumb from '@/pages/components/Breadcrumb'
 import DataTable from '@/pages/components/DataTable'
 import ApiError from '@/utils/ApiError'
 import formatRelativeTime from '@/utils/formatRelativeTime'

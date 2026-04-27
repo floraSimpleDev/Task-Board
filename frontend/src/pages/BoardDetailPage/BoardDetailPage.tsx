@@ -3,10 +3,10 @@ import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortabl
 import type { FC } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 
-import Breadcrumb from '@/components/Breadcrumb'
 import useBoard from '@/hooks/useBoard'
 import useMoveTask from '@/hooks/useMoveTask'
 import useReorderColumns from '@/hooks/useReorderColumns'
+import Breadcrumb from '@/pages/components/Breadcrumb'
 
 import ColumnCard from './components/ColumnCard'
 import CreateColumnForm from './components/CreateColumnForm'

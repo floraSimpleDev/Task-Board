@@ -7,8 +7,8 @@ interface Cursor {
 }
 
 const cursorPayloadSchema = Type.Object({
-  createdAt: Type.String({ format: 'date-time' }),
-  id: Type.String({ format: 'uuid' }),
+  createdAt: Type.String(),
+  id: Type.String(),
 })
 
 const encodeCursor = ({ createdAt, id }: Cursor): string =>
@@ -30,4 +30,24 @@ const decodeCursor = (token: string | undefined): Cursor | undefined => {
   }
 }
 
-export { decodeCursor, encodeCursor }
+const buildPaginatedResult = <TRow extends Cursor>(
+  rows: TRow[],
+  limit: number
+): {
+  items: (Omit<TRow, 'createdAt'> & { createdAt: string })[]
+  nextCursor: string | null
+} => {
+  const hasMore = rows.length > limit
+  const trimmed = hasMore ? rows.slice(0, limit) : rows
+  const lastItem = trimmed.at(-1)
+  const items = trimmed.map(({ createdAt, ...rest }) => ({
+    ...rest,
+    createdAt: createdAt.toISOString(),
+  }))
+  return {
+    items,
+    nextCursor: hasMore && lastItem ? encodeCursor(lastItem) : null,
+  }
+}
+
+export { buildPaginatedResult, decodeCursor, encodeCursor }
