@@ -1,7 +1,7 @@
 import type { FC } from 'react'
 
-import Breadcrumb from '@/components/Breadcrumb'
 import useAdminBoards from '@/hooks/useAdminBoards'
+import Breadcrumb from '@/pages/components/Breadcrumb'
 import DataTable from '@/pages/components/DataTable'
 import ApiError from '@/utils/ApiError'
 

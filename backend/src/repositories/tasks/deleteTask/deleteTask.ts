@@ -9,7 +9,7 @@ const deleteTask = async (database: Database, taskId: string): Promise<boolean> 
     .where(eq(tasks.id, taskId))
     .returning({ id: tasks.id })
 
-  return deleted.length > 0
+  return !!deleted.length
 }
 
 export default deleteTask

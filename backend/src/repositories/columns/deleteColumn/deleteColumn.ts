@@ -9,7 +9,7 @@ const deleteColumn = async (database: Database, columnId: string): Promise<boole
     .where(eq(boardColumns.id, columnId))
     .returning({ id: boardColumns.id })
 
-  return deleted.length > 0
+  return !!deleted.length
 }
 
 export default deleteColumn

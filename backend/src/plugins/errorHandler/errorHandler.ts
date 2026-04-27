@@ -13,13 +13,17 @@ const errorHandler: FastifyPluginAsync = async (fastify) => {
 
     if (isClientError) {
       request.log.warn({ err: error }, 'Client error')
-    } else {
-      request.log.error({ err: error }, 'Unhandled server error')
+      void reply.code(statusCode).send({
+        error: statusName,
+        message: trustMessage ? error.message : statusName,
+      })
+      return
     }
 
+    request.log.error({ err: error }, 'Unhandled server error')
     void reply.code(statusCode).send({
       error: statusName,
-      message: !isClientError ? 'Internal server error' : trustMessage ? error.message : statusName,
+      message: 'Internal server error',
     })
   })
 
