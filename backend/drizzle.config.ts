@@ -1,10 +1,11 @@
+/// <reference types="node" />
 import 'dotenv/config'
 
 import { defineConfig } from 'drizzle-kit'
 
-const database_url = process.env.DATABASE_URL
+const databaseUrl = process.env.DATABASE_URL
 
-if (!database_url) {
+if (!databaseUrl) {
   throw new Error('Missing required env var: DATABASE_URL')
 }
 
@@ -13,6 +14,6 @@ export default defineConfig({
   schema: './src/db/schema/*.ts',
   dialect: 'postgresql',
   dbCredentials: {
-    url: database_url,
+    url: databaseUrl,
   },
 })

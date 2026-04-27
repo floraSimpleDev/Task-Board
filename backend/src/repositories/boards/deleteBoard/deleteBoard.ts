@@ -13,7 +13,7 @@ const deleteBoard = async (
     .where(and(eq(boards.id, boardId), eq(boards.userId, userId)))
     .returning({ id: boards.id })
 
-  return deleted.length > 0
+  return !!deleted.length
 }
 
 export default deleteBoard

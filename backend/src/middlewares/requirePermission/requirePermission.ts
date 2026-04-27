@@ -1,19 +1,17 @@
+import { Type } from '@sinclair/typebox'
+import { Value } from '@sinclair/typebox/value'
 import type { preHandlerHookHandler } from 'fastify'
 
 import { ForbiddenError } from '@/lib/httpErrors'
 
-interface AccessTokenClaims {
-  sub: string
-  email?: string
-  name?: string
-  nickname?: string
-  permissions?: string[]
-}
+const accessTokenClaimsSchema = Type.Object({
+  permissions: Type.Optional(Type.Array(Type.String())),
+})
 
 const requirePermission =
   (permission: string): preHandlerHookHandler =>
   (request, _reply, done) => {
-    const { permissions = [] } = request.user as AccessTokenClaims
+    const { permissions = [] } = Value.Decode(accessTokenClaimsSchema, request.user)
     if (!permissions.includes(permission)) {
       done(new ForbiddenError(`Missing required permission: ${permission}`))
       return

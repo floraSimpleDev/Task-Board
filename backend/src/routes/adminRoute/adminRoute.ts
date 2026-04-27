@@ -75,13 +75,13 @@ const adminRoute: FastifyPluginAsync = async (fastify) => {
     },
     async (request) => {
       const { cursor: rawCursor, limit = 25 } = request.query
-      const decodedCursor = rawCursor ? decodeCursor(rawCursor) : undefined
+      const decodedCursor = decodeCursor(rawCursor)
       if (rawCursor && !decodedCursor) {
         throw new BadRequestError('Invalid cursor')
       }
 
       const rows = await listAllTasksWithContext(fastify.database, {
-        cursor: decodedCursor ?? undefined,
+        cursor: decodedCursor,
         limit: limit + 1,
       })
 
@@ -111,13 +111,13 @@ const adminRoute: FastifyPluginAsync = async (fastify) => {
     },
     async (request) => {
       const { cursor: rawCursor, limit = 25 } = request.query
-      const decodedCursor = rawCursor ? decodeCursor(rawCursor) : undefined
+      const decodedCursor = decodeCursor(rawCursor)
       if (rawCursor && !decodedCursor) {
         throw new BadRequestError('Invalid cursor')
       }
 
       const rows = await listAllActivitiesWithContext(fastify.database, {
-        cursor: decodedCursor ?? undefined,
+        cursor: decodedCursor,
         limit: limit + 1,
       })
 

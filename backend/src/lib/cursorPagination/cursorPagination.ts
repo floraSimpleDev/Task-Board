@@ -14,19 +14,19 @@ const cursorPayloadSchema = Type.Object({
 const encodeCursor = ({ createdAt, id }: Cursor): string =>
   Buffer.from(JSON.stringify({ createdAt: createdAt.toISOString(), id })).toString('base64url')
 
-const decodeCursor = (token: string): Cursor | null => {
+const decodeCursor = (token: string | undefined): Cursor | undefined => {
+  if (!token) {
+    return undefined
+  }
   try {
-    const parsed = JSON.parse(Buffer.from(token, 'base64url').toString('utf8')) as unknown
-    if (!Value.Check(cursorPayloadSchema, parsed)) {
-      return null
-    }
-    const createdAt = new Date(parsed.createdAt)
-    if (Number.isNaN(createdAt.getTime())) {
-      return null
-    }
-    return { createdAt, id: parsed.id }
+    const payload = Value.Decode(
+      cursorPayloadSchema,
+      JSON.parse(Buffer.from(token, 'base64url').toString('utf8'))
+    )
+    const createdAt = new Date(payload.createdAt)
+    return Number.isNaN(createdAt.getTime()) ? undefined : { createdAt, id: payload.id }
   } catch {
-    return null
+    return undefined
   }
 }
 
